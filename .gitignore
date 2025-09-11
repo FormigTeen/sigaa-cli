@@ -1,0 +1,27 @@
+# venvs comuns
+.venv/
+venv/
+env/
+ENV/
+
+# caches/artefatos Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+.build/
+build/
+dist/
+*.egg-info/
+.eggs/
+.installed.cfg
+
+# ferramentas
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.pyre/
+.pytype/
+
+.idea
