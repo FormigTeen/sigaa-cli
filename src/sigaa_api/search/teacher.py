@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import List, Optional
 
-from ..browser import SigaaBrowser
+from ..browser import SigaaBrowser, HtmlPage
 from ..parser import Parser
 from ..types import Campus, ProgressCallback, TeacherResult
 
@@ -21,9 +21,9 @@ class SigaaSearchTeacher:
     def __init__(self, browser: SigaaBrowser, parser: Parser) -> None:
         self._browser = browser
         self._parser = parser
-        self._page = None
+        self._page : Optional[HtmlPage] = None
 
-    def _load_search_page(self):
+    def _load_search_page(self) -> HtmlPage:
         if self._page is not None:
             return self._page
         page = self._browser.new_page()
@@ -70,8 +70,8 @@ class SigaaSearchTeacher:
         results: List[TeacherResult] = []
         for i in range(rows.count()):
             row = rows.nth(i)
-            name = self._parser.remove_tags_html(row.locator("span.nome").inner_html())
-            department = self._parser.remove_tags_html(row.locator("span.departamento").inner_html())
+            name = self._parser.remove_tags_html(str(row.locator("span.nome")))
+            department = self._parser.remove_tags_html(str(row.locator("span.departamento")))
             href = row.locator("span.pagina > a").nth(0).get_attribute("href") or ""
             photo_src = row.locator("img").nth(0).get_attribute("src") or ""
             if href:

@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional
 
-from ..browser import SigaaBrowser
+from ..browser import SigaaBrowser, HtmlPage
 from ..parser import Parser
 from ..resources.file import SigaaFile
 
@@ -20,7 +20,7 @@ class CourseSession:
         self._browser = browser
         self._parser = parser
 
-    def _current_page(self):
+    def _current_page(self) -> HtmlPage:
         return self._browser.new_page()
 
     def list_files(self) -> List[FileLink]:

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import Iterable, List, Optional, Any
+from typing import Iterable, List, Optional, Any, Iterator
 from urllib.parse import urljoin
 
 import httpx
@@ -38,7 +38,7 @@ class RequestClient:
         resp = self._client.get(url, **kwargs)
         return ResponseAdapter(resp)
 
-    def post(self, url: str, *, form: Optional[dict] = None, data: Optional[dict] = None, **kwargs: Any) -> ResponseAdapter:
+    def post(self, url: str, *, form: Optional[dict[Any, Any]] = None, data: Optional[dict[Any, Any]] = None, **kwargs: Any) -> ResponseAdapter:
         payload = data if data is not None else form
         resp = self._client.post(url, data=payload, **kwargs)
         return ResponseAdapter(resp)
@@ -141,7 +141,7 @@ class SigaaBrowser:
             self._client = None
 
     @contextmanager
-    def page(self):
+    def page(self) -> Iterator[HtmlPage]:
         p = self.new_page()
         try:
             yield p

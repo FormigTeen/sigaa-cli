@@ -2,19 +2,19 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Any
 
 from typing import List, Optional
 
 from ..bonds import BondType, StudentBond, TeacherBond
 from ..browser import SigaaBrowser
+from ..courses.navigator import CourseNavigator, CourseSession
 from ..parser import Parser
 from ..session import Session
 from ..types import LoginStatus, ProgressCallback
 from ..courses.models import Course
 from ..activities.models import Activity
 from datetime import datetime
-from ..courses.navigator import CourseNavigator
 
 
 @dataclass
@@ -49,7 +49,7 @@ class SigaaAccountUFBA:
                 self._parse_bond_page(p)
         self._parsed = True
 
-    def _parse_bond_page(self, page) -> None:
+    def _parse_bond_page(self, page: Any) -> None:
         rows = page.locator("table.subFormulario tbody tr")
         for i in range(rows.count()):
             row = rows.nth(i)
@@ -87,7 +87,7 @@ class SigaaAccountUFBA:
                 else:
                     self._inactive_bonds.append(bond)
 
-    def _parse_student_homepage(self, page) -> None:
+    def _parse_student_homepage(self, page: Any) -> None:
         registration = self.parser.remove_tags_html(
             page.locator('#agenda-docente > table > tbody > tr:nth-child(1) > td:nth-child(2)').text_content()
         )
@@ -126,7 +126,7 @@ class SigaaAccountUFBA:
             if not src:
                 return None
             url = p.abs_url(src)
-            return url
+            return str(url) if url is not None else None
 
     def download_profile_picture(self, basepath: Path, callback: Optional[ProgressCallback] = None) -> Optional[Path]:
         url = self.get_profile_picture_url()
@@ -218,7 +218,7 @@ class SigaaAccountUFBA:
     def get_activities(self) -> List[Activity]:
         with self.browser.page() as p:
             p.goto('/sigaa/portais/discente/discente.jsf')
-            table = p.locator('#avaliacao-portal > table')
+            table = p.locator('#avaliacao-portal > table').nth(0)
             rows = table.locator('tbody > tr')
             acts: List[Activity] = []
             for i in range(rows.count()):
@@ -273,5 +273,5 @@ class SigaaAccountUFBA:
                 acts.append(Activity(course_title=course_title, type=typ, title=title, date=dt, done=done))
             return acts
 
-    def open_course_by_title(self, title: str) -> CourseNavigator:
+    def open_course_by_title(self, title: str) -> CourseSession:
         return CourseNavigator(self.browser, self.parser).open_course_by_title(title)

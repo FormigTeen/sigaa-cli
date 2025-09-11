@@ -29,7 +29,7 @@ class Sigaa:
             raise NotImplementedError(f"Institution {institution} not supported (only UFBA)")
         self._login = SigaaLoginUFBA(self._browser, self._session)
 
-    def login(self, username: str, password: str):
+    def login(self, username: str, password: str) -> SigaaAccountUFBA:
         self._login.login(username, password)
         return SigaaAccountUFBA(self._browser, self._parser, self._session)
 

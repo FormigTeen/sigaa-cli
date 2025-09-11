@@ -3,7 +3,8 @@ from typing import Optional
 
 import click
 
-from .sigaa import Sigaa, Institution
+from .sigaa import Sigaa
+from .types import  Institution
 from .accounts.ufba import SigaaAccountUFBA
 from .resources.file import SigaaFile
 
@@ -104,7 +105,8 @@ def account_profile_picture(url: str, user: str, password: str, download_dir: Op
         acc = sigaa.login(user, password)
         if not isinstance(acc, SigaaAccountUFBA):
             raise click.ClickException("Instituição não suportada neste comando.")
-        url = acc.get_profile_picture_url()
+        url_or_none = acc.get_profile_picture_url()
+        url = str(url if url is not None else "Imagem não Encontrada")
         click.echo(f"URL: {url}")
         if download_dir:
             dest = acc.download_profile_picture(download_dir)
@@ -177,44 +179,6 @@ def student_activities(url: str, user: str, password: str) -> None:
             click.echo(f"- [{a.date:%d/%m/%Y %H:%M}] {'OK' if a.done else 'PEND'} {a.type}: {a.title} ({a.course_title})")
     finally:
         sigaa.close()
-
-
-@cli.command("course-list-files", help="Lista arquivos (links de download) de um curso (UFBA)")
-@click.option("--url", required=True)
-@click.option("--user", required=True)
-@click.option("--password", required=True)
-@click.option("--course-title", required=True)
-def course_list_files(url: str, user: str, password: str, course_title: str) -> None:
-    sigaa = Sigaa(institution=Institution.UFBA, url=url)
-    try:
-        acc = sigaa.login(user, password)
-        if not isinstance(acc, SigaaAccountUFBA):
-            raise click.ClickException("Instituição não suportada neste comando.")
-        cs = acc.open_course_by_title(course_title)
-        for fl in cs.list_files():
-            click.echo(f"- {fl.name} | {fl.url}")
-    finally:
-        sigaa.close()
-
-
-@cli.command("course-download-files", help="Baixa arquivos do curso (UFBA)")
-@click.option("--url", required=True)
-@click.option("--user", required=True)
-@click.option("--password", required=True)
-@click.option("--course-title", required=True)
-@click.option("--dest", required=True, type=click.Path(path_type=Path, file_okay=False, dir_okay=True))
-def course_download_files(url: str, user: str, password: str, course_title: str, dest: Path) -> None:
-    sigaa = Sigaa(institution=Institution.UFBA, url=url)
-    try:
-        acc = sigaa.login(user, password)
-        if not isinstance(acc, SigaaAccountUFBA):
-            raise click.ClickException("Instituição não suportada neste comando.")
-        cs = acc.open_course_by_title(course_title)
-        for p in cs.download_files(dest):
-            click.echo(p)
-    finally:
-        sigaa.close()
-
 
 def main() -> None:
     cli(prog_name="sigaa-api")
