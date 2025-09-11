@@ -4,7 +4,7 @@ from typing import Optional, cast
 
 from .browser import BrowserConfig, SigaaBrowser
 from src.sigaa_api.providers.ufba.provider import UFBAProvider
-from .models.student import Student
+from .models.account import Account
 from .parser import Parser
 from .providers.provider import Provider
 from .search.teacher import SigaaSearch
@@ -35,7 +35,7 @@ class Sigaa:
 
         # Apenas UFBA
         self._provider: Provider = PROVIDERS[institution](self._browser, self._session)
-        self._student = Student(institution=institution)
+        self._account: Optional[Account] = None
 
     def login(self, username: str, password: str) -> bool:
         if self._session.login_status == LoginStatus.UNAUTHENTICATED:
@@ -46,41 +46,22 @@ class Sigaa:
     def logoff(self) -> bool:
         if self._session.login_status == LoginStatus.AUTHENTICATED:
             self._provider.logoff()
-            self._student = Student(institution=self._student.institution)
+            self._account = None
         self._session.login_status = LoginStatus.UNAUTHENTICATED
         return True
 
-    def get_name(self) ->Optional[str]:
+    def get_account(self) -> Account:
         if self._session.login_status == LoginStatus.UNAUTHENTICATED:
             raise ValueError("Not authenticated")
-        if self._student.get_name():
-            return self._student.get_name()
-        self._student.set_name(self._provider.get_name())
-        return self._student.get_name()
-
-    def get_email(self):
-        if self._session.login_status == LoginStatus.UNAUTHENTICATED:
-            raise ValueError("Not authenticated")
-        if self._student.get_email():
-            return self._student.get_email()
-        self._student.set_email(self._provider.get_email())
-        return self._student.get_email()
-
-    def get_registration(self) -> Optional[str]:
-        if self._session.login_status == LoginStatus.UNAUTHENTICATED:
-            raise ValueError("Not authenticated")
-        if self._student.get_registration():
-            return self._student.get_registration()
-        self._student.set_registration(self._provider.get_registration())
-        return self._student.get_registration()
-
-    def get_profile_picture_url(self) -> Optional[str]:
-        if self._session.login_status == LoginStatus.UNAUTHENTICATED:
-            raise ValueError("Not authenticated")
-        if self._student.get_profile_picture_url() is not None:
-            return self._student.get_profile_picture_url()
-        self._student.set_profile_picture_url(self._provider.get_profile_picture_url())
-        return self._student.get_profile_picture_url()
+        if self._account is not None:
+            return self._account
+        return Account(
+            provider=self._provider.KEY,
+            registration=self._provider.get_registration(),
+            name=self._provider.get_name(),
+            email=self._provider.get_email(),
+            profile_picture_url=self._provider.get_profile_picture_url(),
+        )
 
     def close(self) -> None:
         self._browser.close()

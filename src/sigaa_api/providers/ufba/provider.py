@@ -29,14 +29,14 @@ class UFBAProvider(Provider):
 
     def get_name(self) -> Optional[str]:
         with self._browser.page() as p:
-            p.goto('/sigaa/portais/discente/discente.jsf')
+            p.safe_goto('/sigaa/portais/discente/discente.jsf')
             html = p.locator('#info-usuario > p.usuario > span').nth(0).inner_html()
             name = strip_html_bs4(html)
             return name
 
     def get_email(self) -> Optional[str]:
         with self._browser.page() as p:
-            p.goto('/sigaa/portais/discente/discente.jsf')
+            p.safe_goto('/sigaa/portais/discente/discente.jsf')
             tbl = p.locator('#agenda-docente > table')
             if tbl.count() == 0:
                 return None
@@ -56,7 +56,7 @@ class UFBAProvider(Provider):
     def get_registration(self) -> Optional[str]:
         # Active student registration (Matrícula)
         with self._browser.page() as p:
-            p.goto('/sigaa/portais/discente/discente.jsf')
+            p.safe_goto('/sigaa/portais/discente/discente.jsf')
             # Same selector used by account layer
             reg = str(p.locator('#agenda-docente > table > tbody > tr:nth-child(1) > td:nth-child(2)').nth(0).inner_html())
             reg = strip_html_bs4(reg or '')
@@ -64,7 +64,7 @@ class UFBAProvider(Provider):
 
     def get_profile_picture_url(self) -> Optional[str]:
         with self._browser.page() as p:
-            p.goto('/sigaa/portais/discente/discente.jsf')
+            p.safe_goto('/sigaa/portais/discente/discente.jsf')
             img = p.locator('#perfil-docente > div.pessoal-docente > div.foto > img')
             if img.count() == 0:
                 return None

@@ -100,6 +100,10 @@ class HtmlPage:
         self._html = resp.text
         self._tree = HTMLParser(self._html)
 
+    def safe_goto(self, url: str) -> None:
+        if self._url.find(url) < 0:
+            self.goto(url)
+
     def wait_for_selector(self, selector: str, timeout: int = 10000) -> None:  # no-op for httpx
         return None
 

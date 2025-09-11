@@ -25,30 +25,27 @@ Observação: Suporte atual: UFBA.
 
 ### Status de Funcionalidades (Testes & Desenvolvimento)
 
-| Funcionalidade                            | Status | Exemplo de comando                                                                                                     |
-|-------------------------------------------| --- |------------------------------------------------------------------------------------------------------------------------|
-| Login (implícito nos comandos)            | ✅ | `sigaa-api account-name --provider UFBA --user USUARIO --password SENHA`                                               |
-| Get Name                                  | ✅ | `sigaa-api account-name --provider UFBA --user USUARIO --password SENHA`                                               |
-| Get Email                                 | ✅ | `sigaa-api account-email -provider UFBA --user USUARIO --password SENHA`                                               |
-| Get Matricula                             | ✅ | `sigaa-api account-registration --url https://sigaa.ufba.br --user USUARIO --password SENHA`                           |
-| Get Profile Image                         | ✅ | `sigaa-api account-profile-picture --url https://sigaa.ufba.br --user USUARIO --password SENHA --download-dir ./fotos` |
-| Listar vínculos (ativos/inativos)         | ⏳ |                                                                                                                        |
-| Listar e-mails do usuário                 | ⏳ |                                                                                                                        |
-| Trocar vínculo por matrícula              | ⏳ |                                                                                                                        |
-| Listar cursos/turmas do discente          | ⏳ |                                                                                                                        |
-| Listar atividades do portal do discente   | ⏳ |                                                                                                                        |
-| Download de arquivo por URL (autenticado) | ⏳ |                                                                                                                        |
-| Busca de docentes (pública)               | ⏳ |                                                                                                                        |
-| Abrir turma por título                    | ⏳ |                                                                                                                        |
-| Listar/baixar arquivos da turma           | ⏳ |                                                                                                                        |
-| Ver faltas e notas das turmas             | ⏳ |                                                                                                                        |
-| Ver notícias publicadas nas turmas        | ⏳ |                                                                                                                        |
-| Ver membros da turma (alunos/professores) | ⏳ |                                                                                                                        |
-| Ver foto de colegas e professores         | ⏳ |                                                                                                                        |
-| Buscar docentes por campus                | ⏳ |                                                                                                                        |
-| Planos de ensino, atendimento, referências | ⏳ |                                                                                                                        |
-| Alterar senha da conta                    | ⏳ |                                                                                                                        |
-| Download de arquivos de todas as turmas   | ⏳ |                                                                                                                        |
+| Funcionalidade                             | Status | Exemplo de comando                                                                                                    |
+|--------------------------------------------| --- |-----------------------------------------------------------------------------------------------------------------------|
+| Login (implícito nos comandos)             | ✅ | `sigaa-api account-name --provider UFBA --user USUARIO --password SENHA`                                              |
+| Get Account                                | ✅ | `sigaa-api account --provider UFBA --user USUARIO --password SENHA`                                               |
+| Listar vínculos (ativos/inativos)          | ⏳ |                                                                                                                       |
+| Listar e-mails do usuário                  | ⏳ |                                                                                                                       |
+| Trocar vínculo por matrícula               | ⏳ |                                                                                                                       |
+| Listar cursos/turmas do discente           | ⏳ |                                                                                                                       |
+| Listar atividades do portal do discente    | ⏳ |                                                                                                                       |
+| Download de arquivo por URL (autenticado)  | ⏳ |                                                                                                                       |
+| Busca de docentes (pública)                | ⏳ |                                                                                                                       |
+| Abrir turma por título                     | ⏳ |                                                                                                                       |
+| Listar/baixar arquivos da turma            | ⏳ |                                                                                                                       |
+| Ver faltas e notas das turmas              | ⏳ |                                                                                                                       |
+| Ver notícias publicadas nas turmas         | ⏳ |                                                                                                                       |
+| Ver membros da turma (alunos/professores)  | ⏳ |                                                                                                                       |
+| Ver foto de colegas e professores          | ⏳ |                                                                                                                       |
+| Buscar docentes por campus                 | ⏳ |                                                                                                                       |
+| Planos de ensino, atendimento, referências | ⏳ |                                                                                                                       |
+| Alterar senha da conta                     | ⏳ |                                                                                                                       |
+| Download de arquivos de todas as turmas    | ⏳ |                                                                                                                       |
 
 Notas:
 - As quatro primeiras entradas foram testadas manualmente (Login, Get Name, Get Matricula, Get Profile Image). As demais estão implementadas ou planejadas, mas ainda não validadas end‑to‑end nesta branch.

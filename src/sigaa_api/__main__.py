@@ -63,62 +63,21 @@ def account_bonds(url: str, user: str, password: str) -> None:
         sigaa.close()
 
 
-@cli.command("account-name", help="Mostra o nome do usuário)")
+@cli.command("account", help="Mostra o nome do usuário)")
 @click.option("--provider", required=True)
 @click.option("--user", required=True)
 @click.option("--password", required=True)
-def account_name(provider: str, user: str, password: str) -> None:
+def get_account(provider: str, user: str, password: str) -> None:
     sigaa = Sigaa(institution=provider)
     try:
         sigaa.login(user, password)
-        click.echo(sigaa.get_name())
+        account = sigaa.get_account()
+        click.echo(f"Matrícula: {account.registration}")
+        click.echo(f"Nome: {account.name}")
+        click.echo(f"Email: {account.email}")
+        click.echo(f"Imagem de Perfil: {account.profile_picture_url}")
     finally:
         sigaa.close()
-
-@cli.command("account-email", help="Email do usuário)")
-@click.option("--provider", required=True)
-@click.option("--user", required=True)
-@click.option("--password", required=True)
-def account_email(provider: str, user: str, password: str) -> None:
-    sigaa = Sigaa(institution=provider)
-    try:
-        sigaa.login(user, password)
-        click.echo(sigaa.get_email())
-    finally:
-        sigaa.close()
-
-
-@cli.command("account-registration", help="Mostra a matrícula (Registration) ativa")
-@click.option("--provider", required=True)
-@click.option("--user", required=True)
-@click.option("--password", required=True)
-def account_registration(provider: str, user: str, password: str) -> None:
-    sigaa = Sigaa(institution=provider)
-    try:
-        sigaa.login(user, password)
-        click.echo(sigaa.get_registration() or "")
-    finally:
-        sigaa.close()
-
-
-@cli.command("account-profile-picture", help="Mostra URL e baixa foto de perfil (alto nível)")
-@click.option("--provider", required=True)
-@click.option("--user", required=True)
-@click.option("--password", required=True)
-@click.option("--download-dir", type=click.Path(path_type=Path, file_okay=False, dir_okay=True), default=None)
-def account_profile_picture(provider: str, user: str, password: str, download_dir: Optional[Path]) -> None:
-    sigaa = Sigaa(institution=provider)
-    try:
-        sigaa.login(user, password)
-        url = sigaa.get_profile_picture_url()
-        click.echo(f"URL: {url or 'Imagem não Encontrada'}")
-        if download_dir and url:
-            f = SigaaFile(sigaa._browser)  # uso interno controlado
-            dest = f.download_get(url, download_dir)
-            click.echo(f"Salvo em: {dest}")
-    finally:
-        sigaa.close()
-
 
 @cli.command("download-file", help="Baixa arquivo por URL absoluta (UFBA)")
 @click.option("--url", required=True, help="URL base do SIGAA (ex.: https://sigaa.ufba.br)")
