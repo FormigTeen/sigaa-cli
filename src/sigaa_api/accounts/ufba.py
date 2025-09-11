@@ -109,13 +109,6 @@ class SigaaAccountUFBA:
         self._ensure_parsed()
         return list(self._inactive_bonds)
 
-    def logoff(self) -> None:
-        req = self.browser.request
-        resp = req.get("/sigaa/logar.do?dispatch=logOff")
-        if not (200 <= resp.status < 400):
-            raise ValueError("SIGAA: Invalid status code in logoff page.")
-        self.session.login_status = LoginStatus.UNAUTHENTICATED
-
     def get_profile_picture_url(self) -> Optional[str]:
         with self.browser.page() as p:
             p.goto('/sigaa/portais/discente/discente.jsf')
@@ -144,37 +137,6 @@ class SigaaAccountUFBA:
         dest.write_bytes(content)
         return dest
 
-    def get_name(self) -> str:
-        if self._name is not None:
-            return self._name
-        with self.browser.page() as p:
-            p.goto('/sigaa/portais/discente/discente.jsf')
-            html = p.locator('#info-usuario > p.usuario > span').nth(0).inner_html()
-            self._name = self.parser.remove_tags_html(html)
-            return self._name
-
-    def get_emails(self) -> List[str]:
-        if self._emails is not None:
-            return list(self._emails)
-        with self.browser.page() as p:
-            p.goto('/sigaa/portais/discente/discente.jsf')
-            self._emails = []
-            tbl = p.locator('#agenda-docente > table')
-            if tbl.count() == 0:
-                return []
-            rows = tbl.nth(0).locator('tr')
-            for i in range(rows.count()):
-                row = rows.nth(i)
-                tds = row.locator('td')
-                if tds.count() < 2:
-                    continue
-                key = self.parser.remove_tags_html(tds.nth(0).inner_html() or '').strip().lower()
-                if key in ('e-mail:', 'e-mail'):
-                    value = self.parser.remove_tags_html(tds.nth(1).inner_html() or '')
-                    if value:
-                        self._emails.append(value)
-                    break
-        return list(self._emails)
 
     # Bonds
     def switch_bond_by_registration(self, registration: str) -> None:

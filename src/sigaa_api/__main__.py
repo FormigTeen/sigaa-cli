@@ -63,33 +63,27 @@ def account_bonds(url: str, user: str, password: str) -> None:
         sigaa.close()
 
 
-@cli.command("account-name", help="Mostra o nome do usuário (UFBA)")
-@click.option("--url", required=True)
+@cli.command("account-name", help="Mostra o nome do usuário)")
+@click.option("--provider", required=True)
 @click.option("--user", required=True)
 @click.option("--password", required=True)
-def account_name(url: str, user: str, password: str) -> None:
-    sigaa = Sigaa(institution=Institution.UFBA, url=url)
+def account_name(provider: str, user: str, password: str) -> None:
+    sigaa = Sigaa(institution=provider)
     try:
-        acc = sigaa.login(user, password)
-        if not isinstance(acc, SigaaAccountUFBA):
-            raise click.ClickException("Instituição não suportada neste comando.")
-        click.echo(acc.get_name())
+        sigaa.login(user, password)
+        click.echo(sigaa.get_name())
     finally:
         sigaa.close()
 
-
-@cli.command("account-emails", help="Lista e-mails do usuário (UFBA)")
-@click.option("--url", required=True)
+@cli.command("account-email", help="Email do usuário)")
+@click.option("--provider", required=True)
 @click.option("--user", required=True)
 @click.option("--password", required=True)
-def account_emails(url: str, user: str, password: str) -> None:
-    sigaa = Sigaa(institution=Institution.UFBA, url=url)
+def account_email(provider: str, user: str, password: str) -> None:
+    sigaa = Sigaa(institution=provider)
     try:
-        acc = sigaa.login(user, password)
-        if not isinstance(acc, SigaaAccountUFBA):
-            raise click.ClickException("Instituição não suportada neste comando.")
-        for email in acc.get_emails():
-            click.echo(email)
+        sigaa.login(user, password)
+        click.echo(sigaa.get_email())
     finally:
         sigaa.close()
 
