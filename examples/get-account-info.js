@@ -1,19 +1,23 @@
 const { Sigaa } = require('sigaa-api');
 
+// Parâmetros de login
+const  PARAMS = {
+  url: 'https://sigaa.ufba.br',
+  institution: 'UFBA',
+  username: '',
+  password: ''
+}
+
 const sigaa = new Sigaa({
-  url: 'https://sigaa.ifsc.edu.br',
-  institution: 'IFSC'
+  url: PARAMS.url,
+  institution: PARAMS.institution
 });
 
-// coloque seu usuário
-const username = '';
-const password = '';
-
 const main = async () => {
-  const account = await sigaa.login(username, password); // login
+  const account = await sigaa.login(PARAMS.username, PARAMS.password); // login
 
   console.log('> Nome: ' + (await account.getName()));
-  console.log('> Emails: ' + (await account.getEmails()).join(', '));
+  console.log('> Email: ' + (await account.getEmails()).find(Boolean));
   console.log('> Url foto: ' + (await account.getProfilePictureURL()));
 
   // Encerra a sessão

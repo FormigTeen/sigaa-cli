@@ -7,10 +7,13 @@ import { SigaaLoginUNB } from './login/sigaa-login-unb';
 import { SigaaPageIFSC } from './page/sigaa-page-ifsc';
 import { SigaaPageUFPB } from './page/sigaa-page-ufpb';
 import { SigaaPageUNB } from './page/sigaa-page-unb';
+import { SigaaAccountUFBA } from '@account/sigaa-account-ufba';
+import { SigaaLoginUFBA } from '@session/login/sigaa-login-ufba';
+import { SigaaPageUFBA } from '@session/page/sigaa-page-ufba';
 /**
  * Map
  */
-export type InstitutionType = 'IFSC' | 'UFPB' | 'UNB';
+export type InstitutionType = 'IFSC' | 'UFPB' | 'UNB' | 'UFBA';
 export type InstitutionMap<T> = Record<InstitutionType, T>;
 /**
  * Map of classes that returns SigaaLogin instance;
@@ -18,6 +21,7 @@ export type InstitutionMap<T> = Record<InstitutionType, T>;
 type SigaaLoginMap =
   | typeof SigaaLoginIFSC
   | typeof SigaaLoginUFPB
+  | typeof SigaaLoginUFBA
   | typeof SigaaLoginUNB;
 export type SigaaLoginInstitutionMap = InstitutionMap<SigaaLoginMap>;
 
@@ -27,6 +31,7 @@ export type SigaaLoginInstitutionMap = InstitutionMap<SigaaLoginMap>;
 type SigaaAccountMap =
   | typeof SigaaAccountIFSC
   | typeof SigaaAccountUFPB
+  | typeof SigaaAccountUFBA
   | typeof SigaaAccountUNB;
 export type SigaaAccountInstitutionMap = InstitutionMap<SigaaAccountMap>;
 
@@ -36,7 +41,8 @@ export type SigaaAccountInstitutionMap = InstitutionMap<SigaaAccountMap>;
 type SigaaPageMap =
   | typeof SigaaPageIFSC
   | typeof SigaaPageUFPB
-  | typeof SigaaPageUNB;
+  | typeof SigaaPageUFPB
+  | typeof SigaaPageUFBA;
 export type SigaaPageInstitutionMap = InstitutionMap<SigaaPageMap>;
 
 export interface InstitutionController {

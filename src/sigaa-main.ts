@@ -54,6 +54,7 @@ import {
   SigaaActivityFactory
 } from '@activity/sigaa-activity-factory';
 import { Page } from '@session/sigaa-page';
+import { SigaaLoginUFBA } from '@session/login/sigaa-login-ufba';
 
 /**
  * @category Internal
@@ -316,6 +317,7 @@ export class Sigaa {
     const SigaaLoginInstitution: SigaaLoginInstitutionMap = {
       IFSC: SigaaLoginIFSC,
       UFPB: SigaaLoginUFPB,
+      UFBA: SigaaLoginUFBA,
       UNB: SigaaLoginUNB
     };
     const institution = options.institution ?? 'IFSC';

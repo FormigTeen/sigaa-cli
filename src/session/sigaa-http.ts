@@ -15,6 +15,7 @@ import { SigaaPageInstitutionMap } from './sigaa-institution-controller';
 import { SigaaPageIFSC } from './page/sigaa-page-ifsc';
 import { SigaaPageUFPB } from './page/sigaa-page-ufpb';
 import { SigaaPageUNB } from './page/sigaa-page-unb';
+import { SigaaPageUFBA } from '@session/page/sigaa-page-ufba';
 
 /**
  * @category Public
@@ -464,6 +465,7 @@ export class SigaaHTTP implements HTTP {
       const bodyBuffer = await this.convertReadebleToBuffer(bodyStream);
       const SigaaPageInstitution: SigaaPageInstitutionMap = {
         IFSC: SigaaPageIFSC,
+        UFBA: SigaaPageUFBA,
         UFPB: SigaaPageUFPB,
         UNB: SigaaPageUNB
       };
