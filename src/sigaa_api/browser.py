@@ -2,147 +2,228 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import Iterable, List, Optional, Any, Iterator
+from typing import Any, Iterator, List, Optional
 from urllib.parse import urljoin
 
-import httpx
-from selectolax.parser import HTMLParser, Node
+from playwright.sync_api import (
+    APIRequestContext,
+    APIResponse,
+    Browser,
+    BrowserContext,
+    Locator as PWLocator,
+    Page,
+    Playwright,
+    TimeoutError as PWTimeoutError,
+    sync_playwright,
+)
 
 
 @dataclass
 class BrowserConfig:
     base_url: str
-    headless: bool = True  # kept for compatibility; no effect for httpx
+    headless: bool = True
 
 
 class ResponseAdapter:
-    def __init__(self, resp: httpx.Response) -> None:
+    def __init__(self, resp: APIResponse) -> None:
         self._resp = resp
 
     @property
     def status(self) -> int:
-        return self._resp.status_code
+        return self._resp.status
 
     def raise_for_status(self) -> None:
-        self._resp.raise_for_status()
+        status = self.status
+        if not (200 <= status < 400):
+            raise RuntimeError(f"HTTP error: status={status}")
 
     def body(self) -> bytes:
-        return self._resp.content
+        return self._resp.body()
 
 
 class RequestClient:
-    def __init__(self, client: httpx.Client) -> None:
-        self._client = client
+    def __init__(self, request: APIRequestContext, base_url: str) -> None:
+        self._request = request
+        self._base_url = base_url.rstrip("/") + "/"
 
     def get(self, url: str, **kwargs: Any) -> ResponseAdapter:
-        resp = self._client.get(url, **kwargs)
+        full = url if url.startswith("http") else urljoin(self._base_url, url)
+        resp = self._request.get(full, **kwargs)
         return ResponseAdapter(resp)
 
-    def post(self, url: str, *, form: Optional[dict[Any, Any]] = None, data: Optional[dict[Any, Any]] = None, **kwargs: Any) -> ResponseAdapter:
-        payload = data if data is not None else form
-        resp = self._client.post(url, data=payload, **kwargs)
+    def post(
+        self,
+        url: str,
+        *,
+        form: Optional[dict[Any, Any]] = None,
+        data: Optional[dict[Any, Any]] = None,
+        **kwargs: Any,
+    ) -> ResponseAdapter:
+        # Mantém compatibilidade: se "data" for dict, envia como form-urlencoded
+        full = url if url.startswith("http") else urljoin(self._base_url, url)
+        if data is not None and isinstance(data, dict):
+            resp = self._request.post(full, form=data, **kwargs)
+        elif form is not None:
+            resp = self._request.post(full, form=form, **kwargs)
+        else:
+            resp = self._request.post(full, data=data, **kwargs)
         return ResponseAdapter(resp)
 
 
 class NodeAdapter:
-    def __init__(self, node: Node, page: "HtmlPage") -> None:
-        self._node = node
+    def __init__(self, locator: PWLocator, page: "HtmlPage") -> None:
+        self._loc = locator
         self._page = page
 
+    def click(self) -> None:
+        try:
+            self._loc.click()
+        except PWTimeoutError:
+            return None
+
     def inner_html(self) -> str:
-        return self._node.html or ""
+        try:
+            return self._loc.inner_html() or ""
+        except PWTimeoutError:
+            return ""
 
     def text_content(self) -> str:
-        return self._node.text() or ""
+        try:
+            tc = self._loc.text_content()
+            return tc if tc is not None else ""
+        except PWTimeoutError:
+            return ""
 
     def get_attribute(self, name: str) -> Optional[str]:
-        return self._node.attributes.get(name)
+        try:
+            return self._loc.get_attribute(name)
+        except PWTimeoutError:
+            return None
 
     def locator(self, selector: str) -> "Locator":
-        nodes = self._node.css(selector) or []
-        return Locator(nodes, self._page)
+        return Locator(self._loc.locator(selector), self._page)
+
+    def __str__(self) -> str:
+        return self.inner_html()
 
 
 class Locator:
-    def __init__(self, nodes: Iterable[Node], page: "HtmlPage") -> None:
-        self._nodes: List[Node] = list(nodes)
+    def __init__(self, locator: PWLocator, page: "HtmlPage") -> None:
+        self._loc = locator
         self._page = page
 
     def count(self) -> int:
-        return len(self._nodes)
+        try:
+            return self._loc.count()
+        except PWTimeoutError:
+            return 0
 
     def nth(self, index: int) -> NodeAdapter:
-        return NodeAdapter(self._nodes[index], self._page)
+        return NodeAdapter(self._loc.nth(index), self._page)
 
     def all(self) -> List[NodeAdapter]:
-        return [NodeAdapter(n, self._page) for n in self._nodes]
+        try:
+            items = self._loc.all()
+        except Exception:
+            items = []
+        return [NodeAdapter(it, self._page) for it in items]
+
+    def __str__(self) -> str:
+        if self.count() > 0:
+            return self.nth(0).inner_html()
+        return ""
 
 
 class HtmlPage:
-    def __init__(self, client: httpx.Client, base_url: str) -> None:
-        self._client = client
+    def __init__(self, page: Page, base_url: str) -> None:
+        self._page = page
         self._base_url = base_url.rstrip("/") + "/"
-        self._url: str = self._base_url
-        self._html: str = ""
-        self._tree: Optional[HTMLParser] = None
 
     @property
     def url(self) -> str:
-        return self._url
+        return self._page.url
 
     def abs_url(self, href: str) -> str:
-        return urljoin(self._url, href)
+        return urljoin(self.url, href)
 
     def goto(self, url: str) -> None:
         full = urljoin(self._base_url, url)
-        resp = self._client.get(full)
-        self._url = str(resp.url)
-        self._html = resp.text
-        self._tree = HTMLParser(self._html)
+        self._page.goto(full)
 
     def safe_goto(self, url: str) -> None:
-        if self._url.find(url) < 0:
+        if url not in self.url:
             self.goto(url)
 
-    def wait_for_selector(self, selector: str, timeout: int = 10000) -> None:  # no-op for httpx
-        return None
+    def go_back(self) -> None:
+        try:
+            self._page.go_back()
+        except PWTimeoutError:
+            return None
 
-    def wait_for_load_state(self, state: str = "networkidle") -> None:  # no-op
-        return None
+    def wait_for_selector(self, selector: str, timeout: int = 10000) -> None:
+        try:
+            self._page.wait_for_selector(selector, timeout=timeout)
+        except PWTimeoutError:
+            return None
+
+    def wait_for_load_state(self, state: str = "networkidle") -> None:
+        try:
+            self._page.wait_for_load_state(state)
+        except PWTimeoutError:
+            return None
 
     def content(self) -> str:
-        return self._html
+        return self._page.content()
 
     def locator(self, selector: str) -> Locator:
-        assert self._tree is not None, "Page not loaded"
-        nodes = self._tree.css(selector) or []
-        return Locator(nodes, self)
+        return Locator(self._page.locator(selector), self)
 
 
 class SigaaBrowser:
     def __init__(self, config: BrowserConfig) -> None:
         self._config = config
-        self._client: Optional[httpx.Client] = None
+        self._pw: Optional[Playwright] = None
+        self._browser: Optional[Browser] = None
+        self._context: Optional[BrowserContext] = None
 
     def ensure_started(self) -> None:
-        if self._client is None:
-            self._client = httpx.Client(base_url=self._config.base_url, follow_redirects=True)
+        if self._context is not None:
+            return
+        self._pw = sync_playwright().start()
+        self._browser = self._pw.chromium.launch(headless=self._config.headless)
+        self._context = self._browser.new_context(base_url=self._config.base_url, accept_downloads=True)
 
     def new_page(self) -> HtmlPage:
         self.ensure_started()
-        assert self._client is not None
-        return HtmlPage(self._client, self._config.base_url)
+        assert self._context is not None
+        page = self._context.new_page()
+        return HtmlPage(page, self._config.base_url)
 
     @property
     def request(self) -> RequestClient:
         self.ensure_started()
-        assert self._client is not None
-        return RequestClient(self._client)
+        assert self._context is not None
+        return RequestClient(self._context.request, self._config.base_url)
 
     def close(self) -> None:
-        if self._client is not None:
-            self._client.close()
-            self._client = None
+        if self._context is not None:
+            try:
+                self._context.close()
+            except Exception:
+                pass
+            self._context = None
+        if self._browser is not None:
+            try:
+                self._browser.close()
+            except Exception:
+                pass
+            self._browser = None
+        if self._pw is not None:
+            try:
+                self._pw.stop()
+            except Exception:
+                pass
+            self._pw = None
 
     @contextmanager
     def page(self) -> Iterator[HtmlPage]:
@@ -150,4 +231,9 @@ class SigaaBrowser:
         try:
             yield p
         finally:
-            pass
+            try:
+                # Fecha a página subjacente
+                # Atributo protegido para encerrar o recurso corretamente
+                p._page.close()  # type: ignore[attr-defined]
+            except Exception:
+                pass

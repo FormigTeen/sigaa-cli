@@ -1,9 +1,9 @@
 # SIGAA API (Python)
 
-Port em Python do projeto sigaa-api com foco inicial em UFBA, usando httpx + selectolax para navegação/crawling e Mypy para tipagem.
+Port em Python do projeto sigaa-api com foco inicial em UFBA, agora usando Playwright para navegação/crawling e Mypy para tipagem.
 
 - Python: >= 3.9
-- HTTP: httpx (cliente) + selectolax (parser)
+- Navegação: Playwright (Chromium headless)
 - Tipagem: Mypy (opcional, modo estrito configurado)
 
 ## Funcionalidades
@@ -210,7 +210,7 @@ finally:
 
 - Instituições suportadas nos recursos de conta: UFBA. Outras instituições podem apresentar variações de layout/fluxo, e serão adicionadas conforme demanda.
 - A listagem de arquivos usa heurística sobre a página da turma; se sua instância SIGAA possuir seções específicas (ex.: "Materiais", "Conteúdo"), podemos refinar os seletores.
-- As operações agora usam HTTP direto; não há navegador para visualizar.
+- Requer Playwright instalado (e os binários do navegador). Após instalar as dependências, execute `playwright install chromium` no ambiente para baixar o Chromium.
 
 ## Desenvolvimento
 
@@ -237,8 +237,8 @@ poe mypy
   - `sigaa_api/login.py`: Login UFBA.
   - `sigaa_api/accounts/ufba.py`: Conta UFBA (vínculos, cursos, atividades, perfil).
   - `sigaa_api/courses/*`: Modelos e navegação de turma.
-  - `sigaa_api/resources/file.py`: Download via cliente HTTP (`httpx`).
-  - `sigaa_api/search/teacher.py`: Busca pública de docentes (JSF) via `httpx`.
+  - `sigaa_api/resources/file.py`: Download via `context.request` do Playwright.
+  - `sigaa_api/search/teacher.py`: Busca pública de docentes (JSF) via Playwright.
 
 ## Roadmap
 

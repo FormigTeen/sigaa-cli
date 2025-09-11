@@ -74,8 +74,42 @@ def get_account(provider: str, user: str, password: str) -> None:
         account = sigaa.get_account()
         click.echo(f"Matrícula: {account.registration}")
         click.echo(f"Nome: {account.name}")
+        click.echo(f"Curso: {account.program}")
         click.echo(f"Email: {account.email}")
         click.echo(f"Imagem de Perfil: {account.profile_picture_url}")
+    finally:
+        sigaa.close()
+
+
+@cli.command("active-courses", help="Lista disciplinas ativas do discente")
+@click.option("--provider", required=True)
+@click.option("--user", required=True)
+@click.option("--password", required=True)
+def get_account(provider: str, user: str, password: str) -> None:
+    sigaa = Sigaa(institution=provider)
+    try:
+        sigaa.login(user, password)
+        courses = sigaa.get_active_courses()
+        headers = ["Code", "Name", "Location", "Time", "Term"]
+        rows = [
+            [c.code, c.name, c.location, c.time_code, c.term]
+            for c in courses
+        ]
+
+        # Compute column widths
+        widths = [len(h) for h in headers]
+        for row in rows:
+            for i, cell in enumerate(row):
+                widths[i] = max(widths[i], len(str(cell)))
+
+        def fmt_row(values: list[str]) -> str:
+            return " | ".join(str(v).ljust(widths[i]) for i, v in enumerate(values))
+
+        # Print table
+        click.echo(fmt_row(headers))
+        click.echo("-+-".join("-" * w for w in widths))
+        for row in rows:
+            click.echo(fmt_row([str(x) for x in row]))
     finally:
         sigaa.close()
 

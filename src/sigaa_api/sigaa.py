@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional, cast
+from typing import Optional, cast, List
 
 from .browser import BrowserConfig, SigaaBrowser
 from src.sigaa_api.providers.ufba.provider import UFBAProvider
@@ -11,6 +11,7 @@ from .search.teacher import SigaaSearch
 from .accounts.ufba import SigaaAccountUFBA
 from .session import Session
 from .types import Institution, LoginStatus
+from .models.active_course import ActiveCourse
 
 PROVIDERS = {
     UFBAProvider.KEY: UFBAProvider,
@@ -36,6 +37,7 @@ class Sigaa:
         # Apenas UFBA
         self._provider: Provider = PROVIDERS[institution](self._browser, self._session)
         self._account: Optional[Account] = None
+        self._active_courses: Optional[List[ActiveCourse]] = None
 
     def login(self, username: str, password: str) -> bool:
         if self._session.login_status == LoginStatus.UNAUTHENTICATED:
@@ -61,7 +63,17 @@ class Sigaa:
             name=self._provider.get_name(),
             email=self._provider.get_email(),
             profile_picture_url=self._provider.get_profile_picture_url(),
+            course=self._provider.get_program(),
         )
 
     def close(self) -> None:
         self._browser.close()
+
+    def get_active_courses(self) -> List[ActiveCourse]:
+        if self._session.login_status == LoginStatus.UNAUTHENTICATED:
+            raise ValueError("Not authenticated")
+        if self._active_courses is not None:
+            return self._active_courses
+        courses = self._provider.get_active_courses()
+        self._active_courses = courses
+        return courses

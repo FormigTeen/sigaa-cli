@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
-from typing import ClassVar, Optional
-
+from typing import ClassVar, Optional, List
 from src.sigaa_api.browser import SigaaBrowser
 from src.sigaa_api.session import Session
+from src.sigaa_api.models.active_course import ActiveCourse
 
 
 class Provider(ABC):
@@ -37,9 +37,21 @@ class Provider(ABC):
         ...
 
     @abstractmethod
+    def get_program(self) -> Optional[str]:
+        ...
+
+    @abstractmethod
     def get_registration(self) -> Optional[str]:
         ...
 
     @abstractmethod
     def get_profile_picture_url(self) -> Optional[str]:
+        ...
+
+    @abstractmethod
+    def get_current_term(self) -> Optional[str]:
+        ...
+
+    @abstractmethod
+    def get_active_courses(self) -> List[ActiveCourse]:
         ...
