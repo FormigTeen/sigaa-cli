@@ -35,3 +35,11 @@ class Provider(ABC):
     @abstractmethod
     def get_name(self) -> Optional[str]:
         ...
+
+    @abstractmethod
+    def get_registration(self) -> Optional[str]:
+        ...
+
+    @abstractmethod
+    def get_profile_picture_url(self) -> Optional[str]:
+        ...

@@ -53,6 +53,27 @@ class UFBAProvider(Provider):
                         return value
         return None
 
+    def get_registration(self) -> Optional[str]:
+        # Active student registration (Matrícula)
+        with self._browser.page() as p:
+            p.goto('/sigaa/portais/discente/discente.jsf')
+            # Same selector used by account layer
+            reg = str(p.locator('#agenda-docente > table > tbody > tr:nth-child(1) > td:nth-child(2)').nth(0).inner_html())
+            reg = strip_html_bs4(reg or '')
+            return reg or None
+
+    def get_profile_picture_url(self) -> Optional[str]:
+        with self._browser.page() as p:
+            p.goto('/sigaa/portais/discente/discente.jsf')
+            img = p.locator('#perfil-docente > div.pessoal-docente > div.foto > img')
+            if img.count() == 0:
+                return None
+            src = img.nth(0).get_attribute('src')
+            if not src:
+                return None
+            url = p.abs_url(src)
+            return str(url) if url is not None else None
+
     def logoff(self) -> None:
         req = self.browser.request
         resp = req.get("/sigaa/logar.do?dispatch=logOff")

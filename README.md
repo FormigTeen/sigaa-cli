@@ -12,6 +12,7 @@ Port em Python do projeto sigaa-api com foco inicial em UFBA, usando httpx + sel
 - Conta (UFBA):
   - Listar vínculos ativos/inativos e trocar vínculo por matrícula.
   - Obter nome e e-mails do usuário.
+  - Obter matrícula (Registration) ativa do discente.
   - Obter URL e baixar foto de perfil.
   - Listar cursos/turmas do discente.
   - Listar atividades do portal do discente.
@@ -24,29 +25,30 @@ Observação: Suporte atual: UFBA.
 
 ### Status de Funcionalidades (Testes & Desenvolvimento)
 
-| Funcionalidade | Status | Exemplo de comando |
-| --- | --- | --- |
-| Login (implícito nos comandos) | ✅ | `sigaa-api account-name --url https://sigaa.ufba.br --user USUARIO --password SENHA` |
-| Get Name | ✅ | `sigaa-api account-name --url https://sigaa.ufba.br --user USUARIO --password SENHA` |
-| Get Matricula (via vínculos) | ✅ | `sigaa-api account-bonds --url https://sigaa.ufba.br --user USUARIO --password SENHA` |
-| Get Profile Image | ✅ | `sigaa-api account-profile-picture --url https://sigaa.ufba.br --user USUARIO --password SENHA --download-dir ./fotos` |
-| Listar vínculos (ativos/inativos) | ⏳ |  |
-| Listar e-mails do usuário | ⏳ |  |
-| Trocar vínculo por matrícula | ⏳ |  |
-| Listar cursos/turmas do discente | ⏳ |  |
-| Listar atividades do portal do discente | ⏳ |  |
-| Download de arquivo por URL (autenticado) | ⏳ |  |
-| Busca de docentes (pública) | ⏳ |  |
-| Abrir turma por título | ⏳ |  |
-| Listar/baixar arquivos da turma | ⏳ |  |
-| Ver faltas e notas das turmas | ⏳ |  |
-| Ver notícias publicadas nas turmas | ⏳ |  |
-| Ver membros da turma (alunos/professores) | ⏳ |  |
-| Ver foto de colegas e professores | ⏳ |  |
-| Buscar docentes por campus | ⏳ |  |
-| Planos de ensino, atendimento, referências | ⏳ |  |
-| Alterar senha da conta | ⏳ |  |
-| Download de arquivos de todas as turmas | ⏳ |  |
+| Funcionalidade                             | Status | Exemplo de comando                                                                                                     |
+|--------------------------------------------| --- |------------------------------------------------------------------------------------------------------------------------|
+| Login (implícito nos comandos)             | ✅ | `sigaa-api account-name --provider UFBA --user USUARIO --password SENHA`                                               |
+| Get Name                                   | ✅ | `sigaa-api account-name --provider UFBA --user USUARIO --password SENHA`                                                |
+| Get Email                                  | ✅ | `sigaa-api account-email -provider UFBA --user USUARIO --password SENHA`                                                |
+| Get Matricula (via vínculos)               | ⏳ | `sigaa-api account-bonds --url https://sigaa.ufba.br --user USUARIO --password SENHA`                                  |
+| Get Profile Image                          | ⏳ | `sigaa-api account-profile-picture --url https://sigaa.ufba.br --user USUARIO --password SENHA --download-dir ./fotos` |
+| Listar vínculos (ativos/inativos)          | ⏳ |                                                                                                                        |
+| Listar e-mails do usuário                  | ⏳ |                                                                                                                        |
+| Trocar vínculo por matrícula               | ⏳ |                                                                                                                        |
+| Listar cursos/turmas do discente           | ⏳ |                                                                                                                        |
+| Listar atividades do portal do discente    | ⏳ |                                                                                                                        |
+| Download de arquivo por URL (autenticado)  | ⏳ |                                                                                                                        |
+| Busca de docentes (pública)                | ⏳ |                                                                                                                        |
+| Abrir turma por título                     | ⏳ |                                                                                                                        |
+| Listar/baixar arquivos da turma            | ⏳ |                                                                                                                        |
+| Ver faltas e notas das turmas              | ⏳ |                                                                                                                        |
+| Ver notícias publicadas nas turmas         | ⏳ |                                                                                                                        |
+| Ver membros da turma (alunos/professores)  | ⏳ |                                                                                                                        |
+| Ver foto de colegas e professores          | ⏳ |                                                                                                                        |
+| Buscar docentes por campus                 | ⏳ |                                                                                                                        |
+| Planos de ensino, atendimento, referências | ⏳ |                                                                                                                        |
+| Alterar senha da conta                     | ⏳ |                                                                                                                        |
+| Download de arquivos de todas as turmas    | ⏳ |                                                                                                                        |
 
 Notas:
 - As quatro primeiras entradas foram testadas manualmente (Login, Get Name, Get Matricula, Get Profile Image). As demais estão implementadas ou planejadas, mas ainda não validadas end‑to‑end nesta branch.
@@ -162,6 +164,26 @@ sigaa-api download-file --url https://sigaa.ufba.br \
 
 ## Uso Programático (Python)
 
+### Uso rápido (alto nível `Sigaa`)
+
+Os métodos abaixo seguem o mesmo padrão de cache usados em `get_name` e `get_email`, e agora incluem matrícula (Registration) e URL da foto de perfil.
+
+```python
+from sigaa_api import Sigaa, Institution
+
+sigaa = Sigaa(institution=Institution.UFBA, url="https://sigaa.ufba.br")
+try:
+    sigaa.login("USUARIO", "SENHA")
+
+    # Perfil do usuário (alto nível)
+    print(sigaa.get_name())                 # Nome
+    print(sigaa.get_email())                # Email
+    print(sigaa.get_registration())         # Registration (Matrícula ativa)
+    print(sigaa.get_profile_picture_url())  # URL da foto de perfil
+finally:
+    sigaa.close()
+```
+
 ```python
 from pathlib import Path
 from sigaa_api import Sigaa, Institution
@@ -170,17 +192,10 @@ sigaa = Sigaa(institution=Institution.UFBA, url="https://sigaa.ufba.br")
 try:
     account = sigaa.login("USUARIO", "SENHA")
 
-    # Vínculos
+    # Vínculos (API de conta UFBA)
     active = account.get_active_bonds()
     inactive = account.get_inactive_bonds()
-
-    # Trocar vínculo
     account.switch_bond_by_registration("2023XXXXX")
-
-    # Perfil
-    print(account.get_name())
-    print(account.get_emails())
-    print(account.get_profile_picture_url())
 
     # Cursos e atividades
     courses = account.get_courses()

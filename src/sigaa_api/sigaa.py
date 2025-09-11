@@ -66,5 +66,21 @@ class Sigaa:
         self._student.set_email(self._provider.get_email())
         return self._student.get_email()
 
+    def get_registration(self) -> Optional[str]:
+        if self._session.login_status == LoginStatus.UNAUTHENTICATED:
+            raise ValueError("Not authenticated")
+        if self._student.get_registration():
+            return self._student.get_registration()
+        self._student.set_registration(self._provider.get_registration())
+        return self._student.get_registration()
+
+    def get_profile_picture_url(self) -> Optional[str]:
+        if self._session.login_status == LoginStatus.UNAUTHENTICATED:
+            raise ValueError("Not authenticated")
+        if self._student.get_profile_picture_url() is not None:
+            return self._student.get_profile_picture_url()
+        self._student.set_profile_picture_url(self._provider.get_profile_picture_url())
+        return self._student.get_profile_picture_url()
+
     def close(self) -> None:
         self._browser.close()

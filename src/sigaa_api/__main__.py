@@ -88,22 +88,33 @@ def account_email(provider: str, user: str, password: str) -> None:
         sigaa.close()
 
 
-@cli.command("account-profile-picture", help="Mostra/baixa foto de perfil (UFBA)")
-@click.option("--url", required=True)
+@cli.command("account-registration", help="Mostra a matrícula (Registration) ativa")
+@click.option("--provider", required=True)
+@click.option("--user", required=True)
+@click.option("--password", required=True)
+def account_registration(provider: str, user: str, password: str) -> None:
+    sigaa = Sigaa(institution=provider)
+    try:
+        sigaa.login(user, password)
+        click.echo(sigaa.get_registration() or "")
+    finally:
+        sigaa.close()
+
+
+@cli.command("account-profile-picture", help="Mostra URL e baixa foto de perfil (alto nível)")
+@click.option("--provider", required=True)
 @click.option("--user", required=True)
 @click.option("--password", required=True)
 @click.option("--download-dir", type=click.Path(path_type=Path, file_okay=False, dir_okay=True), default=None)
-def account_profile_picture(url: str, user: str, password: str, download_dir: Optional[Path]) -> None:
-    sigaa = Sigaa(institution=Institution.UFBA, url=url)
+def account_profile_picture(provider: str, user: str, password: str, download_dir: Optional[Path]) -> None:
+    sigaa = Sigaa(institution=provider)
     try:
-        acc = sigaa.login(user, password)
-        if not isinstance(acc, SigaaAccountUFBA):
-            raise click.ClickException("Instituição não suportada neste comando.")
-        url_or_none = acc.get_profile_picture_url()
-        url = str(url if url is not None else "Imagem não Encontrada")
-        click.echo(f"URL: {url}")
-        if download_dir:
-            dest = acc.download_profile_picture(download_dir)
+        sigaa.login(user, password)
+        url = sigaa.get_profile_picture_url()
+        click.echo(f"URL: {url or 'Imagem não Encontrada'}")
+        if download_dir and url:
+            f = SigaaFile(sigaa._browser)  # uso interno controlado
+            dest = f.download_get(url, download_dir)
             click.echo(f"Salvo em: {dest}")
     finally:
         sigaa.close()
