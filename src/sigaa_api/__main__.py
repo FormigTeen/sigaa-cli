@@ -1,7 +1,11 @@
 from pathlib import Path
 from typing import Optional
 
-import click
+import rich_click as click
+from rich.console import Console
+from rich.table import Table
+from rich.panel import Panel
+from rich import box
 
 from .sigaa import Sigaa
 from .types import  Institution
@@ -72,11 +76,26 @@ def get_account(provider: str, user: str, password: str) -> None:
     try:
         sigaa.login(user, password)
         account = sigaa.get_account()
-        click.echo(f"Matrícula: {account.registration}")
-        click.echo(f"Nome: {account.name}")
-        click.echo(f"Curso: {account.program}")
-        click.echo(f"Email: {account.email}")
-        click.echo(f"Imagem de Perfil: {account.profile_picture_url}")
+        console = Console()
+
+        grid = Table.grid(padding=(0, 2))
+        grid.add_column(style="bold cyan", justify="right", no_wrap=True)
+        grid.add_column()
+        grid.add_row("Matrícula", account.registration or "-")
+        grid.add_row("Nome", account.name or "-")
+        grid.add_row("Curso", account.program or "-")
+        grid.add_row("Email", account.email or "-")
+        grid.add_row("Imagem de Perfil", account.profile_picture_url or "-")
+
+        panel = Panel(
+            grid,
+            title=f"Conta | {account.name or 'Usuário'}",
+            title_align="left",
+            border_style="green",
+            box=box.ROUNDED,
+        )
+
+        console.print(panel)
     finally:
         sigaa.close()
 
@@ -85,31 +104,32 @@ def get_account(provider: str, user: str, password: str) -> None:
 @click.option("--provider", required=True)
 @click.option("--user", required=True)
 @click.option("--password", required=True)
-def get_account(provider: str, user: str, password: str) -> None:
+def active_courses(provider: str, user: str, password: str) -> None:
     sigaa = Sigaa(institution=provider)
     try:
         sigaa.login(user, password)
         courses = sigaa.get_active_courses()
-        headers = ["Code", "Name", "Location", "Time", "Term"]
-        rows = [
-            [c.code, c.name, c.location, c.time_code, c.term]
-            for c in courses
-        ]
 
-        # Compute column widths
-        widths = [len(h) for h in headers]
-        for row in rows:
-            for i, cell in enumerate(row):
-                widths[i] = max(widths[i], len(str(cell)))
+        console = Console()
+        table = Table(
+            show_header=True,
+            header_style="bold cyan",
+            box=box.SIMPLE_HEAVY,
+            show_lines=False,
+            title="Disciplinas Ativas",
+            title_style="bold magenta",
+        )
 
-        def fmt_row(values: list[str]) -> str:
-            return " | ".join(str(v).ljust(widths[i]) for i, v in enumerate(values))
+        table.add_column("Code", style="bold", no_wrap=True)
+        table.add_column("Name")
+        table.add_column("Location", style="dim")
+        table.add_column("Time", style="dim", no_wrap=True)
+        table.add_column("Term", no_wrap=True)
 
-        # Print table
-        click.echo(fmt_row(headers))
-        click.echo("-+-".join("-" * w for w in widths))
-        for row in rows:
-            click.echo(fmt_row([str(x) for x in row]))
+        for c in courses:
+            table.add_row(c.code, c.name, c.location or "-", c.time_code or "-", c.term or "-")
+
+        console.print(table)
     finally:
         sigaa.close()
 

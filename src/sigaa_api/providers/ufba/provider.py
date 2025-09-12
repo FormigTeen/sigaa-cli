@@ -4,7 +4,8 @@ from typing import Final, Optional, List
 import re
 
 from src.sigaa_api.providers.provider import Provider
-from src.sigaa_api.providers.ufba.utils.active_courses import get_table as get_active_courses_table
+from src.sigaa_api.providers.ufba.utils.active_courses import get_table as get_active_courses_table, \
+    is_valid_active_course_line, get_active_course, to_detail_page_and_extract
 from src.sigaa_api.providers.ufba.utils.table_html import get_rows
 from src.sigaa_api.utils.parser import strip_html_bs4
 from src.sigaa_api.models.active_course import ActiveCourse
@@ -110,51 +111,13 @@ class UFBAProvider(Provider):
                 return courses
 
             current_term = self.get_current_term() or ""
-
             rows = get_rows(tbl)
-            rows_count = rows.count()
-            i = 0
+            rows = list(filter(is_valid_active_course_line, rows))
 
-            while i < rows_count:
-                row = rows.nth(i)
-                tds = row.locator('td')
-                if tds.count() < 3 or (tds.nth(0).get_attribute('colspan') is not None):
-                    i += 1
-                    continue
+            for row in rows:
 
-                # First column: course name (anchor inside td.descricao)
-                name_node = row.locator('td.descricao a')
-
-                if name_node.count() > 0:
-                    name_html = name_node.nth(0).inner_html() or ''
-                else:
-                    name_html = tds.nth(0).inner_html() or ''
-                name = strip_html_bs4(name_html).strip()
-
-                # Second column: location
-                location_html = tds.nth(1).inner_html() or ''
-                location = strip_html_bs4(location_html).strip()
-
-                # Third column: time code
-                time_html = tds.nth(2).inner_html() or ''
-                time_code = strip_html_bs4(time_html).strip()
-
-                # Click the link to open the class page and extract code from #nomeTurma
-                code_value = ""
-                if name_node.count() > 0:
-                    try:
-                        name_node.nth(0).click()
-                        p.wait_for_load_state('networkidle')
-                        nome = p.locator('#nomeTurma')
-                        if nome.count() > 0:
-                            code_html = nome.nth(0).inner_html() or ''
-                            code_value = strip_html_bs4(code_html).strip()
-                    except Exception:
-                        code_value = ""
-                    finally:
-                        # Return to previous page using history
-                        p.go_back()
-                        p.wait_for_selector('#turmas-portal > table:nth-child(3)')
+                name, location, time_code = get_active_course(row)
+                code_value, count, *extra = to_detail_page_and_extract(p, row)
 
                 courses.append(
                     ActiveCourse(
@@ -166,7 +129,6 @@ class UFBAProvider(Provider):
                     )
                 )
 
-                i += 1
 
         return courses
 
