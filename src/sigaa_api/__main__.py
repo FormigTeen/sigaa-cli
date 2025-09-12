@@ -89,7 +89,7 @@ def get_account(provider: str, user: str, password: str) -> None:
     sigaa = Sigaa(institution=provider)
     try:
         sigaa.login(user, password)
-        courses = sigaa.get_active_courses/()
+        courses = sigaa.get_active_courses()
         headers = ["Code", "Name", "Location", "Time", "Term"]
         rows = [
             [c.code, c.name, c.location, c.time_code, c.term]

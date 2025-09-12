@@ -4,6 +4,8 @@ from typing import Final, Optional, List
 import re
 
 from src.sigaa_api.providers.provider import Provider
+from src.sigaa_api.providers.ufba.utils.active_courses import get_table as get_active_courses_table
+from src.sigaa_api.providers.ufba.utils.table_html import get_rows
 from src.sigaa_api.utils.parser import strip_html_bs4
 from src.sigaa_api.models.active_course import ActiveCourse
 
@@ -103,34 +105,26 @@ class UFBAProvider(Provider):
         courses: List[ActiveCourse] = []
         with self._browser.page() as p:
             p.goto('/sigaa/portais/discente/discente.jsf')
-            tbl = p.locator('#turmas-portal > table:nth-child(3)')
+            tbl = get_active_courses_table(p)
             if tbl.count() == 0:
                 return courses
 
             current_term = self.get_current_term() or ""
 
-            # We will re-select rows on each iteration in case navigation occurs
-            # when clicking on course links and we return to the page.
-            rows_count = tbl.nth(0).locator('tbody > tr').count()
+            rows = get_rows(tbl)
+            rows_count = rows.count()
             i = 0
-            while i < rows_count:
-                # Re-select table and rows since we may have navigated in previous loop
-                tbl = p.locator('#turmas-portal > table:nth-child(3)')
-                if tbl.count() == 0:
-                    break
-                rows = tbl.nth(0).locator('tbody > tr')
-                if i >= rows.count():
-                    break
-                row = rows.nth(i)
 
+            while i < rows_count:
+                row = rows.nth(i)
                 tds = row.locator('td')
-                # Skip header/separator rows that have a single colspan cell or not enough columns
                 if tds.count() < 3 or (tds.nth(0).get_attribute('colspan') is not None):
                     i += 1
                     continue
 
                 # First column: course name (anchor inside td.descricao)
                 name_node = row.locator('td.descricao a')
+
                 if name_node.count() > 0:
                     name_html = name_node.nth(0).inner_html() or ''
                 else:
