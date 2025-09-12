@@ -63,7 +63,7 @@ class Sigaa:
             name=self._provider.get_name(),
             email=self._provider.get_email(),
             profile_picture_url=self._provider.get_profile_picture_url(),
-            course=self._provider.get_program(),
+            program=self._provider.get_program(),
         )
 
     def close(self) -> None:
