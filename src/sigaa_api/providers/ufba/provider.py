@@ -102,7 +102,7 @@ class UFBAProvider(Provider):
     def get_active_courses(self) -> List[ActiveCourse]:
         courses: List[ActiveCourse] = []
         with self._browser.page() as p:
-            p.safe_goto('/sigaa/portais/discente/discente.jsf')
+            p.goto('/sigaa/portais/discente/discente.jsf')
             tbl = p.locator('#turmas-portal > table:nth-child(3)')
             if tbl.count() == 0:
                 return courses

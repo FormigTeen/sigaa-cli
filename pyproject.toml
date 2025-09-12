@@ -12,6 +12,8 @@ dependencies = [
     "beautifulsoup4>=4.13",
     "playwright>=1.41",
     "click>=8.1",
+    "rich>=13.7",
+    "rich-click>=1.8",
 ]
 authors = [{ name = "Matheus Freitas", email = "msformigteen@live.com" }]
 
@@ -43,8 +45,8 @@ show_error_codes = true
 pretty = true
 
 [[tool.mypy.overrides]]
-module = []
-ignore_missing_imports = false
+module = ["rich", "rich.*", "rich_click", "rich_click.*"]
+ignore_missing_imports = true
 
 [tool.poe.tasks]
 # Type checking with mypy

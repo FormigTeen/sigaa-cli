@@ -1,7 +1,9 @@
 from pathlib import Path
 from typing import Optional
 
-import click
+import rich_click as click
+from rich.console import Console
+from rich.table import Table
 
 from .sigaa import Sigaa
 from .types import  Institution
@@ -9,9 +11,14 @@ from .accounts.ufba import SigaaAccountUFBA
 from .resources.file import SigaaFile
 
 
+console = Console()
+
+
 @click.group()
 def cli() -> None:
     """CLI para interagir com o SIGAA."""
+    # Configurações adicionais do rich-click podem ser feitas via variáveis
+    # de ambiente ou no arquivo principal do app, se necessário.
     pass
 
 
@@ -31,12 +38,12 @@ def search_teacher(url: str, user: str, password: str, name: str, download_photo
     try:
         sigaa.login(user, password)
         results = sigaa.search.teacher().search(name)
-        click.echo(f"Encontrados {len(results)} docentes")
+        console.print(f"[bold]Encontrados {len(results)} docentes[/bold]")
         for r in results:
-            click.echo(f"- {r.name} | {r.department} | {r.page_url}")
+            console.print(f"- [cyan]{r.name}[/cyan] | {r.department} | {r.page_url}")
             if download_photo_dir and r.profile_picture_url and r.download_profile_picture:
                 dest = r.download_profile_picture(download_photo_dir, None)
-                click.echo(f"  Foto salva em: {dest}")
+                console.print(f"  [green]Foto salva em:[/green] {dest}")
     finally:
         sigaa.close()
 
@@ -53,12 +60,12 @@ def account_bonds(url: str, user: str, password: str) -> None:
             raise click.ClickException("Instituição não suportada neste comando.")
         active = acc.get_active_bonds()
         inactive = acc.get_inactive_bonds()
-        click.echo("Ativos:")
+        console.print("[bold]Ativos:[/bold]")
         for b in active:
-            click.echo(f"- {b}")
-        click.echo("Inativos:")
+            console.print(f"- {b}")
+        console.print("[bold]Inativos:[/bold]")
         for b in inactive:
-            click.echo(f"- {b}")
+            console.print(f"- {b}")
     finally:
         sigaa.close()
 
@@ -72,11 +79,11 @@ def get_account(provider: str, user: str, password: str) -> None:
     try:
         sigaa.login(user, password)
         account = sigaa.get_account()
-        click.echo(f"Matrícula: {account.registration}")
-        click.echo(f"Nome: {account.name}")
-        click.echo(f"Curso: {account.program}")
-        click.echo(f"Email: {account.email}")
-        click.echo(f"Imagem de Perfil: {account.profile_picture_url}")
+        console.print(f"[bold]Matrícula:[/bold] {account.registration}")
+        console.print(f"[bold]Nome:[/bold] {account.name}")
+        console.print(f"[bold]Curso:[/bold] {account.program}")
+        console.print(f"[bold]Email:[/bold] {account.email}")
+        console.print(f"[bold]Imagem de Perfil:[/bold] {account.profile_picture_url}")
     finally:
         sigaa.close()
 
@@ -90,26 +97,18 @@ def get_account(provider: str, user: str, password: str) -> None:
     try:
         sigaa.login(user, password)
         courses = sigaa.get_active_courses()
-        headers = ["Code", "Name", "Location", "Time", "Term"]
-        rows = [
-            [c.code, c.name, c.location, c.time_code, c.term]
-            for c in courses
-        ]
 
-        # Compute column widths
-        widths = [len(h) for h in headers]
-        for row in rows:
-            for i, cell in enumerate(row):
-                widths[i] = max(widths[i], len(str(cell)))
+        table = Table(title="Disciplinas Ativas", header_style="bold magenta")
+        table.add_column("Code", style="cyan", no_wrap=True)
+        table.add_column("Name", style="white")
+        table.add_column("Location", style="white")
+        table.add_column("Time", style="white")
+        table.add_column("Term", style="white")
 
-        def fmt_row(values: list[str]) -> str:
-            return " | ".join(str(v).ljust(widths[i]) for i, v in enumerate(values))
+        for c in courses:
+            table.add_row(str(c.code), str(c.name), str(c.location), str(c.time_code), str(c.term))
 
-        # Print table
-        click.echo(fmt_row(headers))
-        click.echo("-+-".join("-" * w for w in widths))
-        for row in rows:
-            click.echo(fmt_row([str(x) for x in row]))
+        console.print(table)
     finally:
         sigaa.close()
 
@@ -125,7 +124,7 @@ def download_file(url: str, user: str, password: str, file_url: str, dest: Path)
         sigaa.login(user, password)
         f = SigaaFile(sigaa._browser)  # uso interno controlado
         dest_path = f.download_get(file_url, dest)
-        click.echo(dest_path)
+        console.print(dest_path)
     finally:
         sigaa.close()
 
@@ -142,7 +141,7 @@ def account_switch_bond(url: str, user: str, password: str, registration: str) -
         if not isinstance(acc, SigaaAccountUFBA):
             raise click.ClickException("Instituição não suportada neste comando.")
         acc.switch_bond_by_registration(registration)
-        click.echo("Vínculo alterado (se disponível).")
+        console.print("[green]Vínculo alterado (se disponível).[/green]")
     finally:
         sigaa.close()
 
@@ -157,8 +156,15 @@ def student_courses(url: str, user: str, password: str) -> None:
         acc = sigaa.login(user, password)
         if not isinstance(acc, SigaaAccountUFBA):
             raise click.ClickException("Instituição não suportada neste comando.")
-        for c in acc.get_courses():
-            click.echo(f"- {c.title} | código={c.code} | período={c.period} | alunos={c.number_of_students}")
+        courses = list(acc.get_courses())
+        table = Table(title="Cursos/Turmas", header_style="bold magenta")
+        table.add_column("Title", style="white")
+        table.add_column("Code", style="cyan", no_wrap=True)
+        table.add_column("Period", style="white")
+        table.add_column("Students", style="white", justify="right")
+        for c in courses:
+            table.add_row(str(c.title), str(c.code), str(c.period), str(c.number_of_students))
+        console.print(table)
     finally:
         sigaa.close()
 
@@ -174,7 +180,8 @@ def student_activities(url: str, user: str, password: str) -> None:
         if not isinstance(acc, SigaaAccountUFBA):
             raise click.ClickException("Instituição não suportada neste comando.")
         for a in acc.get_activities():
-            click.echo(f"- [{a.date:%d/%m/%Y %H:%M}] {'OK' if a.done else 'PEND'} {a.type}: {a.title} ({a.course_title})")
+            status = "[green]OK[/green]" if a.done else "[yellow]PEND[/yellow]"
+            console.print(f"- [{a.date:%d/%m/%Y %H:%M}] {status} {a.type}: {a.title} ({a.course_title})")
     finally:
         sigaa.close()
 
