@@ -6,6 +6,7 @@ import re
 from src.sigaa_api.providers.provider import Provider
 from src.sigaa_api.providers.ufba.utils.active_courses import get_table as get_active_courses_table, \
     is_valid_active_course_line, get_active_course, to_detail_page_and_extract
+from src.sigaa_api.providers.ufba.utils.detail_program import extract_detail_program
 from src.sigaa_api.providers.ufba.utils.table_html import get_rows
 from src.sigaa_api.utils.parser import strip_html_bs4
 from src.sigaa_api.models.active_course import ActiveCourse
@@ -140,36 +141,32 @@ class UFBAProvider(Provider):
             # Itera sobre os cursos, ignorando a primeira opção (placeholder)
             course_options = page.locator('#busca\\:curso > option')
             total_courses = course_options.count()
+            course_options = [course_options.nth(index) for index in range(1, total_courses)]
+            course_option_values = [option.get_attribute('value') for option in course_options]
+            course_option_values = [value for value in course_option_values if value]
 
-            for ic in range(1, total_courses):
-                course_opt = course_options.nth(ic)
-                course_value = (course_opt.get_attribute('value') or '').strip()
-                if not course_value:
-                    continue
-
+            for course_value in course_option_values:
                 # Seleciona o curso para carregar as matrizes e coletar todos os valores
                 page.locator('#busca\\:curso').nth(0).select_option(course_value)
                 page.wait_for_selector('#busca\\:matriz')
 
                 matriz_options = page.locator('#busca\\:matriz > option')
                 total_matrizes = matriz_options.count()
-                matriz_values: list[str] = []
-                for im in range(1, total_matrizes):
-                    mv = (matriz_options.nth(im).get_attribute('value') or '').strip()
-                    if mv:
-                        matriz_values.append(mv)
 
-                # Para cada matriz, re-seleciona curso e matriz, busca, detalha, imprime e volta
+                matriz_options = [matriz_options.nth(index) for index in range(1, total_matrizes)]
+                matriz_values = [option.get_attribute('value') for option in matriz_options]
+
                 for matriz_value in matriz_values:
                     page.locator('#busca\\:curso').nth(0).select_option(course_value)
                     page.wait_for_selector('#busca\\:matriz')
                     page.locator('#busca\\:matriz').nth(0).select_option(matriz_value)
 
-                    search_btn = page.locator('#busca > table > tfoot > tr > td > input[type=submit]:nth-child(1)').nth(0)
-                    search_btn.click()
+                    search_button = page.locator('#busca > table > tfoot > tr > td > input[type=submit]:nth-child(1)').nth(0)
+                    search_button.click()
 
                     page.wait_for_selector('#resultado\\:detalhar')
                     detalhar = page.locator('#resultado\\:detalhar')
+
                     if detalhar.count() == 0:
                         page.go_back()
                         page.wait_for_selector('#busca\\:curso')
@@ -177,12 +174,10 @@ class UFBAProvider(Provider):
 
                     detalhar.nth(0).click()
 
-                    sel_value = '#formulario > table > tbody > tr:nth-child(2) > td'
-                    page.wait_for_selector(sel_value)
-                    value_html = page.locator(sel_value).nth(0).inner_html()
-                    value_text = strip_html_bs4(value_html or '').strip()
-                    if value_text:
-                        print(value_text)
+                    page.wait_for_selector('#formulario > table')
+
+                    detail_program = extract_detail_program(page)
+                    print(detail_program.courses)
 
                     page.go_back()
                     page.go_back()
