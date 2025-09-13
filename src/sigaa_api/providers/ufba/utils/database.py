@@ -1,0 +1,94 @@
+from __future__ import annotations
+
+import os
+from typing import Any, List, Optional, NamedTuple
+
+from tinydb import TinyDB, Query  # type: ignore
+
+# Arquivo temporário para persistência dos resultados do scraper (sempre TinyDB)
+DB_PATH = os.environ.get("SECTIONS_DB_FILE", "/tmp/sections.json")
+os.makedirs(os.path.dirname(DB_PATH) or ".", exist_ok=True)
+
+
+# Tipos locais (espelho de utils.detail_section) para reconstrução ao ler do DB
+Spot = NamedTuple('Spot', [
+    ('course', str),
+    ('count', str)
+])
+
+Section = NamedTuple('Section', [
+    ('ref_id', str),
+    ('course', str),
+    ('term', str),
+    ('teachers', list[str]),
+    ('mode', str),
+    ('time_id', str),
+    ('location', str),
+    ('spots', list[Spot]),
+])
+
+
+def _to_dict(obj: Any) -> Any:
+    # Converte NamedTuple (Section/Spot) e listas aninhadas para dict/list serializável
+    if hasattr(obj, "_asdict"):
+        d = obj._asdict()
+        return {k: _to_dict(v) for k, v in d.items()}
+    if isinstance(obj, list):
+        return [_to_dict(x) for x in obj]
+    return obj
+
+
+def _from_dict_section(d: dict) -> Optional[Section]:
+    try:
+        spots_list = d.get("spots") or []
+        spots: List[Spot] = [Spot(course=s.get("course", ""), count=s.get("count", "")) for s in spots_list]
+        return Section(
+            ref_id=str(d.get("ref_id", "")),
+            course=str(d.get("course", "")),
+            term=str(d.get("term", "")),
+            teachers=list(d.get("teachers", []) or []),
+            mode=str(d.get("mode", "")),
+            time_id=str(d.get("time_id", "")),
+            location=str(d.get("location", "")),
+            spots=spots,
+        )
+    except Exception:
+        return None
+
+
+_db = TinyDB(DB_PATH)
+_table = _db.table("sections")
+
+
+def was_saved(id: str) -> bool:
+    if not id:
+        return False
+    SectionQ = Query()
+    return _table.get(SectionQ.ref_id == id) is not None
+
+
+def save_detail_section(section: Any) -> None:
+    data = _to_dict(section)
+    # Garante que temos um ref_id para indexar
+    ref_id = str(data.get("ref_id", "")) if isinstance(data, dict) else ""
+    if not ref_id:
+        return
+    SectionQ = Query()
+    _table.upsert(data, SectionQ.ref_id == ref_id)
+    try:
+        print(f"[DB] Salvo section ref_id={ref_id}")
+    except Exception:
+        pass
+
+
+def get_detail_section(id: str) -> Any:
+    if not id:
+        return None
+    SectionQ = Query()
+    found = _table.get(SectionQ.ref_id == id)
+    if found:
+        try:
+            print(f"[DB] Pulando ref_id={id} (já salvo)")
+        except Exception:
+            pass
+    return _from_dict_section(found or {}) if found else None

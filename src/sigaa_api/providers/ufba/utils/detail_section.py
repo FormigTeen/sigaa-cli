@@ -2,6 +2,7 @@ from typing import NamedTuple, List, Optional
 import re
 
 from src.sigaa_api.browser import HtmlPage, NodeAdapter
+from src.sigaa_api.providers.ufba.utils.database import get_detail_section, save_detail_section
 from src.sigaa_api.utils.parser import strip_html_bs4
 
 Spot = NamedTuple('Spot', [
@@ -99,6 +100,12 @@ def go_and_extract_detail_section(row: NodeAdapter, page: HtmlPage) -> Section:
     course = _extract_course_from_header(row)
     term, mode, time_id, location = _extract_basic_from_row(row)
 
+    saved_detail = get_detail_section(ref_id)
+
+    if saved_detail:
+        # Converta para Section
+        return saved_detail
+
     # Navigate to detail page
     if ref_id:
         url = f"/sigaa/graduacao/turma/view_painel.jsf?ajaxRequest=true&contarMatriculados=true&id={ref_id}"
@@ -111,4 +118,6 @@ def go_and_extract_detail_section(row: NodeAdapter, page: HtmlPage) -> Section:
     page.go_back()
     page.wait_for_selector('#lista-turmas')
 
-    return Section(ref_id, course, term, teachers, mode, time_id, location, spots)
+    section = Section(ref_id, course, term, teachers, mode, time_id, location, spots)
+    save_detail_section(section)
+    return section
