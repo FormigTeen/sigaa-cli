@@ -40,10 +40,11 @@ def extract_detail_program(page: HtmlPage) -> DetailProgram:
     # Courses from tab panel
     courses: List[Course] = []
     tab_panel = page.locator('#formulario\\:tab_painel')
+
     if tab_panel.count() > 0:
-        # Each tab content is a TD with an id inside the second TR
         tab_contents = tab_panel.nth(0).locator('> tbody > tr:nth-child(2) > td[id]').all()
         for content in tab_contents:
+
             # Get section/level title (first span within content)
             level_span = content.locator('span')
             level_name = ''
@@ -53,40 +54,33 @@ def extract_detail_program(page: HtmlPage) -> DetailProgram:
             # Now iterate the data tables within this content
             tables = content.locator('table.rich-table').all()
             for tbl in tables:
-                rows = tbl.locator('tbody > tr')
-                total = rows.count()
-                for i in range(total):
-                    row = rows.nth(i)
-                    tds = row.locator('td')
-                    td_count = tds.count()
-                    if td_count < 3:
-                        continue
+                rows = tbl.locator('tbody > tr').all()
+                tds_in_row = [row.locator('td') for row in rows]
+                tds_in_row = [tds for tds in tds_in_row if tds.count() >= 3]
 
-                    # Column mapping: (code, title, mode, [type])
-                    code_td = tds.nth(0)
-                    # Prefer the label inside the first td when available
-                    label = code_td.locator('label')
-                    if label.count() > 0:
-                        code_text = strip_html_bs4(label.nth(0).inner_html() or '')
-                        # Extract id_ref from onclick attribute
-                        onclick = label.nth(0).get_attribute('onclick') or ''
-                        m = re.search(r"PainelComponente\.show\((\d+),", onclick)
-                        id_ref = m.group(1) if m else ''
-                    else:
-                        code_text = strip_html_bs4(code_td.inner_html() or '')
-                        id_ref = ''
-                    code_text = code_text.strip()
+                types = [None if tds.count() < 4 else tds.nth(3).inner_html() or '' for tds in tds_in_row]
+                types = ['OBRIGATÓRIO' if type_html is None else strip_html_bs4(type_html) for type_html in types]
+                types = [type_label.strip() for type_label in types]
 
-                    title_text = strip_html_bs4(tds.nth(1).inner_html() or '').strip()
-                    mode_text = strip_html_bs4(tds.nth(2).inner_html() or '').strip()
+                code_tds = [tds.nth(0) for tds in tds_in_row]
+                labels_html = [code_td.locator('label') for code_td in code_tds]
+                labels_html = [None if label.count() < 0 else label.nth(0) for label in labels_html]
 
-                    if td_count >= 4:
-                        type_text = strip_html_bs4(tds.nth(3).inner_html() or '').strip()
-                    else:
-                        # Tabs without explicit type are mandatory components
-                        type_text = 'OBRIGATÓRIO'
+                codes = ['' if label_html is None else strip_html_bs4(label_html.inner_html() or '') for label_html in labels_html]
 
-                    if code_text and title_text:
-                        courses.append(Course(code_text, title_text, mode_text, type_text, level_name, id_ref))
+                onclick_labels = ['' if label_html is None else label_html.get_attribute('onclick') or '' for label_html in labels_html]
+                onclick_labels = [re.search(r"PainelComponente\.show\((\d+),", onclick_text) for onclick_text in onclick_labels]
+                ids = [regex_onclick.group(1) if regex_onclick else '' for regex_onclick in onclick_labels]
+
+                titles_html = [(tds.nth(1).inner_html() or '') for tds in tds_in_row]
+                titles = [strip_html_bs4(title_html).strip() for title_html in titles_html]
+
+                modes_html = [tds.nth(2).inner_html() or '' for tds in tds_in_row]
+                modes = [strip_html_bs4(mode_html).strip() for mode_html in modes_html]
+
+                table_courses = list(zip(codes, titles, modes, types, [level_name] * len(ids), ids))
+                table_courses = [Course(*props) for props in table_courses]
+
+                courses += table_courses
 
     return DetailProgram(code, curriculum_title, courses)
