@@ -53,8 +53,9 @@ def extract_detail_program(page: HtmlPage) -> DetailProgram:
 
             # Now iterate the data tables within this content
             tables = content.locator('table.rich-table').all()
-            for tbl in tables:
-                rows = tbl.locator('tbody > tr').all()
+            rows_in_tables = [tbl.locator('tbody > tr').all() for tbl in tables]
+
+            for rows in rows_in_tables:
                 tds_in_row = [row.locator('td') for row in rows]
                 tds_in_row = [tds for tds in tds_in_row if tds.count() >= 3]
 

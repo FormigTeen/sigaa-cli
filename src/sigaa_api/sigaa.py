@@ -82,3 +82,8 @@ class Sigaa:
         if self._session.login_status == LoginStatus.UNAUTHENTICATED:
             raise ValueError("Not authenticated")
         self._provider.get_programs()
+
+    def get_sections(self) -> None:
+        if self._session.login_status == LoginStatus.UNAUTHENTICATED:
+            raise ValueError("Not authenticated")
+        self._provider.get_sections()

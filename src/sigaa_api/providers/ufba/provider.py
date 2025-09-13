@@ -7,6 +7,7 @@ from src.sigaa_api.providers.provider import Provider
 from src.sigaa_api.providers.ufba.utils.active_courses import get_table as get_active_courses_table, \
     is_valid_active_course_line, get_active_course, to_detail_page_and_extract
 from src.sigaa_api.providers.ufba.utils.detail_program import extract_detail_program
+from src.sigaa_api.providers.ufba.utils.detail_section import go_and_extract_detail_section
 from src.sigaa_api.providers.ufba.utils.table_html import get_rows
 from src.sigaa_api.utils.parser import strip_html_bs4
 from src.sigaa_api.models.active_course import ActiveCourse
@@ -133,6 +134,57 @@ class UFBAProvider(Provider):
 
         return courses
 
+    def get_sections(self) -> None:
+        with self._browser.page() as page:
+            page.goto('/sigaa/ensino/turma/busca_turma.jsf')
+            page.wait_for_selector('#busca\\:curso')
+
+            # Itera sobre os cursos, ignorando a primeira opção (placeholder)
+            course_options = page.locator('#form\\:selectCurso > option')
+            total_courses = course_options.count()
+            course_options = [course_options.nth(index) for index in range(1, total_courses)]
+            course_option_values = [option.get_attribute('value') for option in course_options]
+            course_option_values = [value for value in course_option_values if value]
+
+            for course_value in course_option_values:
+                # Seleciona o curso para carregar as matrizes e coletar todos os valores
+                page.locator('#form\\:selectCurso ').nth(0).select_option(course_value)
+                page.wait_for_selector('#form\\:selectCurso ')
+
+                # Garante que o checkbox de curso esteja sempre marcado
+                checkbox_selector = '#form\\:checkCurso'
+                checked_selector = '#form\\:checkCurso:checked'
+                checkbox = page.locator(checkbox_selector)
+                if checkbox.count() > 0:
+                    is_checked = page.locator(checked_selector).count() > 0
+                    if not is_checked:
+                        checkbox.nth(0).click()
+                        page.wait_for_selector(checked_selector)
+
+                search_button = page.locator('#form\\:buttonBuscar').nth(0)
+                search_button.click()
+
+                page.wait_for_selector('#lista-turmas')
+                table = page.locator('#lista-turmas')
+
+                # Itera linhas da tabela, pulando cabeçalhos e linhas de opções
+                rows = get_rows(table)
+                rows_with_class = [(row, (row.get_attribute('class') or '').lower()) for row in rows]
+                rows_with_class = [(row, classes) for row, classes in rows_with_class if 'no-hover' not in classes]
+                rows = [row for row, classes in rows_with_class if 'linhapar' in classes or 'linhaimpar' in classes]
+                print(course_value, len(rows))
+
+                sections = []
+                for row in rows:
+                    #print(sections)
+                    try:
+                         sections.append(go_and_extract_detail_section(row, page))
+                    except Exception:
+                        continue
+
+                page.go_back()
+                page.wait_for_selector('#busca\\:curso')
+
     def get_programs(self) -> None:
         with self._browser.page() as page:
             page.goto('/sigaa/geral/estrutura_curricular/busca_geral.jsf')
@@ -160,6 +212,26 @@ class UFBAProvider(Provider):
                     page.locator('#busca\\:curso').nth(0).select_option(course_value)
                     page.wait_for_selector('#busca\\:matriz')
                     page.locator('#busca\\:matriz').nth(0).select_option(matriz_value)
+
+                    # Garante que os checkboxes de curso e matriz estejam sempre marcados
+                    checkbox_curso_selector = '#busca\\:checkCurso'
+                    checked_curso_selector = '#busca\\:checkCurso:checked'
+                    checkbox_matriz_selector = '#busca\\:checkMatriz'
+                    checked_matriz_selector = '#busca\\:checkMatriz:checked'
+
+                    checkbox_curso = page.locator(checkbox_curso_selector)
+                    if checkbox_curso.count() > 0:
+                        is_curso_checked = page.locator(checked_curso_selector).count() > 0
+                        if not is_curso_checked:
+                            checkbox_curso.nth(0).click()
+                            page.wait_for_selector(checked_curso_selector)
+
+                    checkbox_matriz = page.locator(checkbox_matriz_selector)
+                    if checkbox_matriz.count() > 0:
+                        is_matriz_checked = page.locator(checked_matriz_selector).count() > 0
+                        if not is_matriz_checked:
+                            checkbox_matriz.nth(0).click()
+                            page.wait_for_selector(checked_matriz_selector)
 
                     search_button = page.locator('#busca > table > tfoot > tr > td > input[type=submit]:nth-child(1)').nth(0)
                     search_button.click()

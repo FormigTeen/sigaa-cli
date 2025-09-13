@@ -49,7 +49,7 @@ def search_teacher(url: str, user: str, password: str, name: str, download_photo
 @click.option("--provider", required=True)
 @click.option("--user", required=True)
 @click.option("--password", required=True)
-def account_bonds(provider: str, user: str, password: str) -> None:
+def programs(provider: str, user: str, password: str) -> None:
     sigaa = Sigaa(institution=provider)
     try:
         sigaa.login(user, password)
@@ -57,6 +57,18 @@ def account_bonds(provider: str, user: str, password: str) -> None:
     finally:
         sigaa.close()
 
+
+@cli.command("sections", help="Lista de Cursos (UFBA)")
+@click.option("--provider", required=True)
+@click.option("--user", required=True)
+@click.option("--password", required=True)
+def sections(provider: str, user: str, password: str) -> None:
+    sigaa = Sigaa(institution=provider)
+    try:
+        sigaa.login(user, password)
+        sigaa.get_sections()
+    finally:
+        sigaa.close()
 
 @cli.command("account", help="Mostra o nome do usuário)")
 @click.option("--provider", required=True)

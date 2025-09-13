@@ -56,6 +56,9 @@ class Provider(ABC):
     def get_programs(self) -> None:
         ...
 
+    def get_sections(self) -> None:
+        ...
+
     @abstractmethod
     def get_active_courses(self) -> List[ActiveCourse]:
         ...
