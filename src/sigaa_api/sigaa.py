@@ -77,3 +77,8 @@ class Sigaa:
         courses = self._provider.get_active_courses()
         self._active_courses = courses
         return courses
+
+    def get_programs(self) -> None:
+        if self._session.login_status == LoginStatus.UNAUTHENTICATED:
+            raise ValueError("Not authenticated")
+        self._provider.get_programs()

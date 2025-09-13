@@ -45,24 +45,15 @@ def search_teacher(url: str, user: str, password: str, name: str, download_photo
         sigaa.close()
 
 
-@cli.command("account-bonds", help="Lista vínculos (UFBA)")
-@click.option("--url", required=True)
+@cli.command("programs", help="Lista de Cursos (UFBA)")
+@click.option("--provider", required=True)
 @click.option("--user", required=True)
 @click.option("--password", required=True)
-def account_bonds(url: str, user: str, password: str) -> None:
-    sigaa = Sigaa(institution=Institution.UFBA, url=url)
+def account_bonds(provider: str, user: str, password: str) -> None:
+    sigaa = Sigaa(institution=provider)
     try:
-        acc = sigaa.login(user, password)
-        if not isinstance(acc, SigaaAccountUFBA):
-            raise click.ClickException("Instituição não suportada neste comando.")
-        active = acc.get_active_bonds()
-        inactive = acc.get_inactive_bonds()
-        click.echo("Ativos:")
-        for b in active:
-            click.echo(f"- {b}")
-        click.echo("Inativos:")
-        for b in inactive:
-            click.echo(f"- {b}")
+        sigaa.login(user, password)
+        sigaa.get_programs()
     finally:
         sigaa.close()
 

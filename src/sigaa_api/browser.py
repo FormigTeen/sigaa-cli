@@ -100,6 +100,16 @@ class NodeAdapter:
         except PWTimeoutError:
             return None
 
+    def select_option(self, value: Optional[str] = None) -> None:
+        try:
+            if value is not None:
+                self._loc.select_option(value=value)
+            else:
+                # If no value provided, do nothing
+                pass
+        except PWTimeoutError:
+            return None
+
     def locator(self, selector: str) -> "Locator":
         return Locator(self._loc.locator(selector), self._page)
 

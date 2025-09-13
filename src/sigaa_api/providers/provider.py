@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import ClassVar, Optional, List
+from typing import ClassVar, Optional, List, Any
 from src.sigaa_api.browser import SigaaBrowser
 from src.sigaa_api.session import Session
 from src.sigaa_api.models.active_course import ActiveCourse
@@ -50,6 +50,10 @@ class Provider(ABC):
 
     @abstractmethod
     def get_current_term(self) -> Optional[str]:
+        ...
+
+    @abstractmethod
+    def get_programs(self) -> None:
         ...
 
     @abstractmethod
