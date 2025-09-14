@@ -18,3 +18,5 @@ class ActiveTeacher(Teacher):
     education: str
     department: str
     image_url: str
+
+

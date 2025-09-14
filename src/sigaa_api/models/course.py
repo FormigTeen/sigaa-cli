@@ -9,6 +9,17 @@ class Course:
     name: str
 
 @dataclass(frozen=True)
+class DetailedCourse(Course):
+    mode: str
+    id_ref: str
+
+@dataclass(frozen=True)
+class AnchoredCourse(DetailedCourse):
+    program_code: str
+    level: str
+    type: str
+
+@dataclass(frozen=True)
 class ActiveCourse(Course):
     table_location: str
     time_codes: list[str]

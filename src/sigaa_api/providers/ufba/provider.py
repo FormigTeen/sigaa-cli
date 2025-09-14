@@ -1,17 +1,20 @@
 from __future__ import annotations
+
+from functools import wraps
 from typing import Final, Optional, List
 import re
 
 from src.sigaa_api.models.entities import ActiveTeacher, ActiveStudent
+from src.sigaa_api.models.program import DetailedProgram
 from src.sigaa_api.providers.provider import Provider
 from src.sigaa_api.providers.ufba.utils.active_courses import get_table as get_active_courses_table, \
     is_valid_active_course_line, get_active_course, to_detail_page_and_extract
-from src.sigaa_api.providers.ufba.utils.detail_program import extract_detail_program
+from src.sigaa_api.providers.ufba.utils.detail_program import extract_detail_program, Course, DetailProgram
 from src.sigaa_api.providers.ufba.utils.detail_section import go_and_extract_detail_section
 from src.sigaa_api.providers.ufba.utils.table_html import get_rows, Card
 from src.sigaa_api.utils.host import add_uri
 from src.sigaa_api.utils.parser import strip_html_bs4
-from src.sigaa_api.models.course import ActiveCourse
+from src.sigaa_api.models.course import ActiveCourse, AnchoredCourse
 
 
 class UFBAProvider(Provider):
@@ -216,7 +219,23 @@ class UFBAProvider(Provider):
                 page.go_back()
                 page.wait_for_selector('#busca\\:curso')
 
-    def get_programs(self) -> None:
+    def get_programs(self) -> list[DetailedProgram]:
+        programs : List[DetailedProgram] = []
+        def parse_course(program: DetailProgram):
+            def parse(course: Course) -> AnchoredCourse:
+                [name, *_] = course.title.split('-')
+                return AnchoredCourse(
+                    name=name.strip(),
+                    code=course.code.strip(),
+                    id_ref=course.id_ref.strip(),
+                    mode=course.mode.strip(),
+                    program_code=program.code.strip(),
+                    level=course.level.strip(),
+                    type=course.type.strip(),
+                )
+
+            return parse
+
         with self._browser.page() as page:
             page.goto('/sigaa/geral/estrutura_curricular/busca_geral.jsf')
             page.wait_for_selector('#busca\\:curso')
@@ -280,8 +299,14 @@ class UFBAProvider(Provider):
                     page.wait_for_selector('#formulario > table')
 
                     detail_program = extract_detail_program(page)
-                    print(detail_program.courses)
+                    [title, location, program_type, mode, time_code, *_] = list(map(str.strip, detail_program.curriculum_title.split('-')))
+                    detailed_program = DetailedProgram(title=title, location=location, program_type=program_type, mode=mode,
+                                                       time_code=time_code, code=detail_program.code.strip(),
+                                                       courses=list(map(parse_course(detail_program), detail_program.courses)))
+                    programs.append(detailed_program)
 
                     page.go_back()
                     page.go_back()
                     page.wait_for_selector('#busca\\:curso')
+
+            return programs
