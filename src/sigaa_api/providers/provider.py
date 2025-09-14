@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import ClassVar, Optional, List, Any
 from src.sigaa_api.browser import SigaaBrowser
+from src.sigaa_api.models.program import DetailedProgram
 from src.sigaa_api.session import Session
 from src.sigaa_api.models.course import ActiveCourse
 
@@ -49,7 +50,7 @@ class Provider(ABC):
         ...
 
     @abstractmethod
-    def get_programs(self) -> None:
+    def get_programs(self) -> List[DetailedProgram]:
         ...
 
     def get_sections(self) -> None:
