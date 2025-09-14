@@ -183,7 +183,8 @@ class UFBAProvider(Provider):
                     #print(sections)
                     try:
                          sections.append(go_and_extract_detail_section(row, page))
-                    except Exception:
+                    except Exception as e:
+                        print(e)
                         continue
 
                 page.go_back()
@@ -258,11 +259,3 @@ class UFBAProvider(Provider):
                     page.go_back()
                     page.go_back()
                     page.wait_for_selector('#busca\\:curso')
-
-
-
-    def logoff(self) -> None:
-        req = self._browser.request
-        resp = req.get("/sigaa/logar.do?dispatch=logOff")
-        if not (200 <= resp.status < 400):
-            raise ValueError("SIGAA: Invalid status code in logoff page.")

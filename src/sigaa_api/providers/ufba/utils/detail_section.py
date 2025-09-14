@@ -117,12 +117,26 @@ def go_and_extract_detail_section(row: NodeAdapter, page: HtmlPage) -> Section:
         page.wait_for_selector('#resumo')
 
 
-    total_html = page.locator('#resumo > table > tbody > tr > td > table > tbody > tr:nth-child(8) > td').nth(0).inner_html()
-    totals_html = page.locator('#resumo > table > tbody > tr > td > table > tbody > tr:nth-child(9) > td').nth(0).inner_html()
-    totals = re.split(r'<br>|<br/>|<br >|<br />', totals_html)
+    # Find td siblings by locating their corresponding th labels regardless of row position
+    total_html = ''
+    totals_html = ''
+
+    ths = page.locator('#resumo th').all()
+    for th in ths:
+        th_text = _normalize_text(strip_html_bs4(th.inner_html() or '')).lower()
+        if 'capacidade:' in th_text and not total_html:
+            td_loc = th.locator('xpath=following-sibling::td[1]')
+            if td_loc.count() > 0:
+                total_html = td_loc.nth(0).inner_html() or ''
+        elif 'totais:' in th_text and not totals_html:
+            td_loc = th.locator('xpath=following-sibling::td[1]')
+            if td_loc.count() > 0:
+                totals_html = td_loc.nth(0).inner_html() or ''
+    totals = re.split(r'<br>|<br/>|<br >|<br />', totals_html or '')
+
     total = strip_html_bs4(total_html).strip()
-    total_requested = strip_html_bs4(safe_get(totals, 0))
-    total_accepted = strip_html_bs4(safe_get(totals, 2))
+    total_requested = strip_html_bs4(safe_get(totals, 0, ''))
+    total_accepted = strip_html_bs4(safe_get(totals, 2, ''))
 
     print("Encontrei: ", (total, total_requested, total_accepted))
 
