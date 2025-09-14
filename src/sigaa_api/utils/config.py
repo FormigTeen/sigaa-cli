@@ -1,5 +1,8 @@
 import os
 from typing import TypeVar, Optional
+from dotenv import load_dotenv, find_dotenv
+
+load_dotenv(find_dotenv(), override=False)
 
 USER_KEY = "SIGAA_API_USER"
 PASSWORD_KEY = "SIGAA_API_PASSWORD"

@@ -29,15 +29,15 @@ class Sigaa:
     ) -> None:
         final_institution = get_config_if_none(DEFAULT_PROVIDER_KEY, institution, "UFBA")
         if final_institution not in PROVIDERS:
-            raise NotImplementedError(f"Institution {institution} not supported")
-        self._provider_class = PROVIDERS[institution]
+            raise NotImplementedError(f"Institution {final_institution} not supported")
+        self._provider_class = PROVIDERS[final_institution]
 
         self._browser = SigaaBrowser(BrowserConfig(base_url=self._provider_class.HOST, headless=headless))
         self._session = Session(institution=institution)
         self._parser = parser or Parser()
 
         # Apenas UFBA
-        self._provider: Provider = PROVIDERS[institution](self._browser, self._session)
+        self._provider: Provider = self._provider_class(self._browser, self._session)
         self._account: Optional[Account] = None
         self._active_courses: Optional[List[ActiveCourse]] = None
 

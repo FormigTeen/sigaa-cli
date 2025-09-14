@@ -21,10 +21,6 @@ class Provider(ABC):
         self._session = session
 
     @abstractmethod
-    def logoff(self) -> None:
-        ...
-
-    @abstractmethod
     def login(self, username: str, password: str) -> None:
         ...
 

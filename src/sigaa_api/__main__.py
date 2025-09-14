@@ -19,37 +19,11 @@ def cli() -> None:
     pass
 
 
-@cli.command("search-teacher", help="Busca docentes por nome (UFBA)")
-@click.option("--url", required=True, help="URL base do SIGAA (ex.: https://sigaa.ufba.br)")
-@click.option("--user", required=True, help="Usuário")
-@click.option("--password", required=True, help="Senha")
-@click.option("--name", required=True, help="Nome do docente para busca")
-@click.option(
-    "--download-photo-dir",
-    type=click.Path(path_type=Path, file_okay=False, dir_okay=True),
-    default=None,
-    help="Diretório para salvar a foto do perfil (opcional)",
-)
-def search_teacher(url: str, user: str, password: str, name: str, download_photo_dir: Optional[Path]) -> None:
-    sigaa = Sigaa(institution=Institution.UFBA, url=url)
-    try:
-        sigaa.login(user, password)
-        results = sigaa.search.teacher().search(name)
-        click.echo(f"Encontrados {len(results)} docentes")
-        for r in results:
-            click.echo(f"- {r.name} | {r.department} | {r.page_url}")
-            if download_photo_dir and r.profile_picture_url and r.download_profile_picture:
-                dest = r.download_profile_picture(download_photo_dir, None)
-                click.echo(f"  Foto salva em: {dest}")
-    finally:
-        sigaa.close()
-
-
 @cli.command("programs", help="Lista de Cursos (UFBA)")
-@click.option("--provider", required=True)
-@click.option("--user", required=True)
-@click.option("--password", required=True)
-def programs(provider: str, user: str, password: str) -> None:
+@click.option("--provider", required=False)
+@click.option("--user", required=False)
+@click.option("--password", required=False)
+def programs(provider: Optional[str] = None, user: Optional[str] = None, password: Optional[str] = None) -> None:
     sigaa = Sigaa(institution=provider)
     try:
         sigaa.login(user, password)
@@ -59,10 +33,10 @@ def programs(provider: str, user: str, password: str) -> None:
 
 
 @cli.command("sections", help="Lista de Cursos (UFBA)")
-@click.option("--provider", required=True)
-@click.option("--user", required=True)
-@click.option("--password", required=True)
-def sections(provider: str, user: str, password: str) -> None:
+@click.option("--provider", required=False)
+@click.option("--user", required=False)
+@click.option("--password", required=False)
+def sections(provider: Optional[str] = None, user: Optional[str] = None, password: Optional[str] = None) -> None:
     sigaa = Sigaa(institution=provider)
     try:
         sigaa.login(user, password)
@@ -71,10 +45,10 @@ def sections(provider: str, user: str, password: str) -> None:
         sigaa.close()
 
 @cli.command("account", help="Mostra o nome do usuário)")
-@click.option("--provider", required=True)
-@click.option("--user", required=True)
-@click.option("--password", required=True)
-def get_account(provider: str, user: str, password: str) -> None:
+@click.option("--provider", required=False)
+@click.option("--user", required=False)
+@click.option("--password", required=False)
+def get_account(provider: Optional[str] = None, user: Optional[str] = None, password: Optional[str] = None) -> None:
     sigaa = Sigaa(institution=provider)
     try:
         sigaa.login(user, password)
@@ -104,10 +78,10 @@ def get_account(provider: str, user: str, password: str) -> None:
 
 
 @cli.command("active-courses", help="Lista disciplinas ativas do discente")
-@click.option("--provider", required=True)
-@click.option("--user", required=True)
-@click.option("--password", required=True)
-def active_courses(provider: str, user: str, password: str) -> None:
+@click.option("--provider", required=False)
+@click.option("--user", required=False)
+@click.option("--password", required=False)
+def active_courses(provider: Optional[str] = None, user: Optional[str] = None, password: Optional[str] = None) -> None:
     sigaa = Sigaa(institution=provider)
     try:
         sigaa.login(user, password)
