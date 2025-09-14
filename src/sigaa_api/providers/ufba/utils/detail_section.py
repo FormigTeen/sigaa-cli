@@ -3,6 +3,7 @@ import re
 
 from src.sigaa_api.browser import HtmlPage, NodeAdapter
 from src.sigaa_api.providers.ufba.utils.database import get_detail_section, save_detail_section
+from src.sigaa_api.utils.list import safe_get
 from src.sigaa_api.utils.parser import strip_html_bs4
 
 Spot = NamedTuple('Spot', [
@@ -12,13 +13,16 @@ Spot = NamedTuple('Spot', [
 
 Section = NamedTuple('Section', [
     ('ref_id', str),
-    ('course', str),
+    ('title', str),
     ('term', str),
     ('teachers', list[str]),
     ('mode', str),
     ('time_id', str),
     ('location', str),
     ('spots', list[Spot]),
+    ('total', str),
+    ('total_requested', str),
+    ('total_accepted', str),
 ])
 def _normalize_text(text: str) -> str:
     lines = [ln.strip() for ln in (text or '').splitlines() if ln and ln.strip()]
@@ -97,7 +101,7 @@ def _extract_teachers_and_spots(page: HtmlPage) -> tuple[List[str], List[Spot]]:
 def go_and_extract_detail_section(row: NodeAdapter, page: HtmlPage) -> Section:
     # Basic info from list row
     ref_id = _extract_ref_id(row)
-    course = _extract_course_from_header(row)
+    title = _extract_course_from_header(row)
     term, mode, time_id, location = _extract_basic_from_row(row)
 
     saved_detail = get_detail_section(ref_id)
@@ -112,12 +116,22 @@ def go_and_extract_detail_section(row: NodeAdapter, page: HtmlPage) -> Section:
         page.goto(url)
         page.wait_for_selector('#resumo')
 
+
+    total_html = page.locator('#resumo > table > tbody > tr > td > table > tbody > tr:nth-child(8) > td').nth(0).inner_html()
+    totals_html = page.locator('#resumo > table > tbody > tr > td > table > tbody > tr:nth-child(9) > td').nth(0).inner_html()
+    totals = re.split(r'<br>|<br/>|<br >|<br />', totals_html)
+    total = strip_html_bs4(total_html).strip()
+    total_requested = strip_html_bs4(safe_get(totals, 0))
+    total_accepted = strip_html_bs4(safe_get(totals, 2))
+
+    print("Encontrei: ", (total, total_requested, total_accepted))
+
     teachers, spots = _extract_teachers_and_spots(page)
 
     # Go back to the list page to continue scraping
     page.go_back()
     page.wait_for_selector('#lista-turmas')
 
-    section = Section(ref_id, course, term, teachers, mode, time_id, location, spots)
+    section = Section(ref_id, title, term, teachers, mode, time_id, location, spots, total, total_requested, total_accepted)
     save_detail_section(section)
     return section

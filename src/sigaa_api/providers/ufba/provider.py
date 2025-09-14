@@ -151,6 +151,10 @@ class UFBAProvider(Provider):
                 page.locator('#form\\:selectCurso ').nth(0).select_option(course_value)
                 page.wait_for_selector('#form\\:selectCurso ')
 
+                # Nome legível do curso selecionado (para logging)
+                selected_opt = page.locator('#form\\:selectCurso > option:checked')
+                course_name = strip_html_bs4(selected_opt.nth(0).inner_html() or '') if selected_opt.count() > 0 else str(course_value)
+
                 # Garante que o checkbox de curso esteja sempre marcado
                 checkbox_selector = '#form\\:checkCurso'
                 checked_selector = '#form\\:checkCurso:checked'
@@ -172,7 +176,7 @@ class UFBAProvider(Provider):
                 rows_with_class = [(row, (row.get_attribute('class') or '').lower()) for row in rows]
                 rows_with_class = [(row, classes) for row, classes in rows_with_class if 'no-hover' not in classes]
                 rows = [row for row, classes in rows_with_class if 'linhapar' in classes or 'linhaimpar' in classes]
-                print(course_value, len(rows))
+                print(course_name, len(rows))
 
                 sections = []
                 for row in rows:

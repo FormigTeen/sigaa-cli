@@ -18,13 +18,16 @@ Spot = NamedTuple('Spot', [
 
 Section = NamedTuple('Section', [
     ('ref_id', str),
-    ('course', str),
+    ('title', str),
     ('term', str),
     ('teachers', list[str]),
     ('mode', str),
     ('time_id', str),
     ('location', str),
     ('spots', list[Spot]),
+    ('total', str),
+    ('total_requested', str),
+    ('total_accepted', str),
 ])
 
 
@@ -44,13 +47,16 @@ def _from_dict_section(d: dict) -> Optional[Section]:
         spots: List[Spot] = [Spot(course=s.get("course", ""), count=s.get("count", "")) for s in spots_list]
         return Section(
             ref_id=str(d.get("ref_id", "")),
-            course=str(d.get("course", "")),
+            title=str(d.get("title", "")),
             term=str(d.get("term", "")),
             teachers=list(d.get("teachers", []) or []),
             mode=str(d.get("mode", "")),
             time_id=str(d.get("time_id", "")),
             location=str(d.get("location", "")),
             spots=spots,
+            total=str(d.get("total", "")),
+            total_requested=str(d.get("total_requested", "")),
+            total_accepted=str(d.get("total_accepted", "")),
         )
     except Exception:
         return None
