@@ -12,6 +12,7 @@ from .accounts.ufba import SigaaAccountUFBA
 from .session import Session
 from .types import Institution, LoginStatus
 from .models.active_course import ActiveCourse
+from .utils.config import get_config_if_none, USER_KEY, PASSWORD_KEY, DEFAULT_PROVIDER_KEY
 
 PROVIDERS = {
     UFBAProvider.KEY: UFBAProvider,
@@ -22,11 +23,12 @@ class Sigaa:
     def __init__(
         self,
         *,
-        institution: str,
+        institution: Optional[str] = None,
         headless: bool = True,
         parser: Optional[Parser] = None,
     ) -> None:
-        if institution not in PROVIDERS:
+        final_institution = get_config_if_none(DEFAULT_PROVIDER_KEY, institution, "UFBA")
+        if final_institution not in PROVIDERS:
             raise NotImplementedError(f"Institution {institution} not supported")
         self._provider_class = PROVIDERS[institution]
 
@@ -39,9 +41,9 @@ class Sigaa:
         self._account: Optional[Account] = None
         self._active_courses: Optional[List[ActiveCourse]] = None
 
-    def login(self, username: str, password: str) -> bool:
+    def login(self, username: Optional[str] = None, password: Optional[str] = None) -> bool:
         if self._session.login_status == LoginStatus.UNAUTHENTICATED:
-            self._provider.login(username, password)
+            self._provider.login(get_config_if_none(USER_KEY, username), get_config_if_none(PASSWORD_KEY, password))
         self._session.login_status = LoginStatus.AUTHENTICATED
         return True
 
