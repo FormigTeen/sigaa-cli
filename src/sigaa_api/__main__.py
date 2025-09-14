@@ -104,7 +104,7 @@ def active_courses(provider: Optional[str] = None, user: Optional[str] = None, p
         table.add_column("Term", no_wrap=True)
 
         for c in courses:
-            table.add_row(c.code, c.name, c.location or "-", c.time_code or "-", c.term or "-")
+            table.add_row(c.code, c.name, c.table_location or "-", '|'.join(c.time_codes) or "-", c.term or "-")
 
         console.print(table)
     finally:

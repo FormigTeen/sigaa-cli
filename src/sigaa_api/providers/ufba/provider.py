@@ -1,16 +1,17 @@
 from __future__ import annotations
-
 from typing import Final, Optional, List
 import re
 
+from src.sigaa_api.models.entities import ActiveTeacher, ActiveStudent
 from src.sigaa_api.providers.provider import Provider
 from src.sigaa_api.providers.ufba.utils.active_courses import get_table as get_active_courses_table, \
     is_valid_active_course_line, get_active_course, to_detail_page_and_extract
 from src.sigaa_api.providers.ufba.utils.detail_program import extract_detail_program
 from src.sigaa_api.providers.ufba.utils.detail_section import go_and_extract_detail_section
-from src.sigaa_api.providers.ufba.utils.table_html import get_rows
+from src.sigaa_api.providers.ufba.utils.table_html import get_rows, Card
+from src.sigaa_api.utils.host import add_uri
 from src.sigaa_api.utils.parser import strip_html_bs4
-from src.sigaa_api.models.active_course import ActiveCourse
+from src.sigaa_api.models.course import ActiveCourse
 
 
 class UFBAProvider(Provider):
@@ -105,6 +106,20 @@ class UFBAProvider(Provider):
             return term or None
 
     def get_active_courses(self) -> List[ActiveCourse]:
+        def parse_teacher(teacher: Card) -> ActiveTeacher:
+            img_url = add_uri(self.get_host(), teacher.img_src)
+            email = teacher.email.lower().replace('e-mail:', '').strip()
+            department = teacher.location.upper().replace('DEPARTAMENTO:', '').strip()
+            education = teacher.code.upper().replace("FORMAÇÃO:", "").strip()
+            return ActiveTeacher(name=teacher.name.strip(), email=email, department=department, education=education, image_url=img_url)
+
+        def parse_student(student: Card) -> ActiveStudent:
+            img_url = add_uri(self.get_host(), student.img_src)
+            email = student.email.lower().replace('e-mail:', '').strip()
+            [course_label, *_] = student.location.upper().replace('CURSO:', '').strip().split('/', 1)
+            registration = student.code.upper().replace("MATRÍCULA:", "").strip()
+            return ActiveStudent(name=student.name.strip(), email=email, course_label=course_label, registration=registration, image_url=img_url)
+
         courses: List[ActiveCourse] = []
         with self._browser.page() as p:
             p.goto('/sigaa/portais/discente/discente.jsf')
@@ -117,21 +132,32 @@ class UFBAProvider(Provider):
             rows = list(filter(is_valid_active_course_line, rows))
 
             for row in rows:
+                _, table_location, time_code = get_active_course(row)
+                title, count, teachers, students, *_ = to_detail_page_and_extract(p, row)
+                code, name, *_ = map(str.strip, title.split('-', 1))
+                name, class_code = map(str.strip, name.split('- T', 1))
+                class_code = "T" + class_code
 
-                name, location, time_code = get_active_course(row)
-                code_value, count, *extra = to_detail_page_and_extract(p, row)
+                [number_classes, total_classes, *_] = list(map(str.strip, count.split('/')))
+                [number_classes, total_classes] = list(map(int, [number_classes, total_classes]))
+
+                time_codes = re.findall(r"\b(\d+)([MTN]+)(\d+)\b", time_code)
+                time_codes = list(map("".join, time_codes))
 
                 courses.append(
                     ActiveCourse(
-                        code=code_value,
+                        code=code,
                         name=name,
-                        location=location,
-                        time_code=time_code,
+                        table_location=table_location,
+                        time_codes=time_codes,
                         term=current_term,
+                        class_code=class_code,
+                        teachers=list(map(parse_teacher, teachers)),
+                        students=list(map(parse_student, students)),
+                        total_classes=total_classes,
+                        number_classes=number_classes,
                     )
                 )
-
-
         return courses
 
     def get_sections(self) -> None:

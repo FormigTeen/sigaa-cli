@@ -11,7 +11,7 @@ from .search.teacher import SigaaSearch
 from .accounts.ufba import SigaaAccountUFBA
 from .session import Session
 from .types import Institution, LoginStatus
-from .models.active_course import ActiveCourse
+from .models.course import ActiveCourse
 from .utils.config import get_config_if_none, USER_KEY, PASSWORD_KEY, DEFAULT_PROVIDER_KEY
 
 PROVIDERS = {
