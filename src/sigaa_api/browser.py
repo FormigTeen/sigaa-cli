@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import Any, Iterator, List, Optional
+from typing import Any, Iterator, List, Optional, Literal
 from urllib.parse import urljoin
 
 from playwright.sync_api import (
@@ -16,6 +16,8 @@ from playwright.sync_api import (
     TimeoutError as PWTimeoutError,
     sync_playwright,
 )
+
+Modes = Optional[Literal['domcontentloaded', 'load', 'networkidle']]
 
 
 @dataclass
@@ -176,7 +178,7 @@ class HtmlPage:
         except PWTimeoutError:
             return None
 
-    def wait_for_load_state(self, state: str = "networkidle") -> None:
+    def wait_for_load_state(self, state: Modes = "networkidle") -> None:
         try:
             self._page.wait_for_load_state(state)
         except PWTimeoutError:
@@ -244,6 +246,6 @@ class SigaaBrowser:
             try:
                 # Fecha a página subjacente
                 # Atributo protegido para encerrar o recurso corretamente
-                p._page.close()  # type: ignore[attr-defined]
+                p._page.close()
             except Exception:
                 pass

@@ -1,6 +1,5 @@
-from typing import NamedTuple, List, Optional
+from typing import NamedTuple, List
 import re
-
 from src.sigaa_api.browser import HtmlPage, NodeAdapter
 from src.sigaa_api.utils.list import safe_get
 from src.sigaa_api.utils.parser import strip_html_bs4
@@ -130,9 +129,9 @@ def go_and_extract_detail_section(row: NodeAdapter, page: HtmlPage) -> Section:
     totals = re.split(r'<br>|<br/>|<br >|<br />', totals_html or '')
 
     total = strip_html_bs4(total_html).strip()
-    total_requested = strip_html_bs4(safe_get(totals, 0, ''))
-    total_rerequested = strip_html_bs4(safe_get(totals, 1, ''))
-    total_accepted = strip_html_bs4(safe_get(totals, 2, ''))
+    total_requested = strip_html_bs4(safe_get(totals, 0, ) or '')
+    total_rerequested = strip_html_bs4(safe_get(totals, 1, ) or '')
+    total_accepted = strip_html_bs4(safe_get(totals, 2, '') or '')
 
     print("Encontrei: ", (total, total_requested, total_rerequested, total_accepted))
 

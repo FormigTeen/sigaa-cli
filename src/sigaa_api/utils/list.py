@@ -1,8 +1,9 @@
-from typing import TypeVar, Callable, Iterable
+from typing import TypeVar, Callable, Optional, Union, List
 
 I = TypeVar('I')
+D = TypeVar('D')
 
-def chunk_after(iterable: Iterable[I], pred: Callable[[I], bool]) -> Iterable[Iterable[I]]:
+def chunk_after(iterable: List[I], pred: Callable[[I], bool]) -> List[List[I]]:
     out, cur = [], []
     for item in iterable:
         cur.append(item)
@@ -13,5 +14,5 @@ def chunk_after(iterable: Iterable[I], pred: Callable[[I], bool]) -> Iterable[It
         out.append(cur)
     return out
 
-def safe_get(seq, i, default=None):
+def safe_get(seq: List[I], i: int, default: Optional[D] = None) -> Union[I, Optional[D]]:
     return seq[i] if -len(seq) <= i < len(seq) else default

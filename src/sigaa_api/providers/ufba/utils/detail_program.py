@@ -60,18 +60,18 @@ def extract_detail_program(page: HtmlPage) -> DetailProgram:
                 tds_in_row = [tds for tds in tds_in_row if tds.count() >= 3]
 
                 types = [None if tds.count() < 4 else tds.nth(3).inner_html() or '' for tds in tds_in_row]
-                types = ['OBRIGATÓRIO' if type_html is None else strip_html_bs4(type_html) for type_html in types]
-                types = [type_label.strip() for type_label in types]
+                str_types = ['OBRIGATÓRIO' if type_html is None else strip_html_bs4(type_html) for type_html in types]
+                types = [type_label.strip() for type_label in str_types]
 
                 code_tds = [tds.nth(0) for tds in tds_in_row]
                 labels_html = [code_td.locator('label') for code_td in code_tds]
-                labels_html = [None if label.count() < 0 else label.nth(0) for label in labels_html]
+                labels_locator_html = [None if label.count() < 0 else label.nth(0) for label in labels_html]
 
-                codes = ['' if label_html is None else strip_html_bs4(label_html.inner_html() or '') for label_html in labels_html]
+                codes = ['' if label_html is None else strip_html_bs4(label_html.inner_html() or '') for label_html in labels_locator_html]
 
-                onclick_labels = ['' if label_html is None else label_html.get_attribute('onclick') or '' for label_html in labels_html]
-                onclick_labels = [re.search(r"PainelComponente\.show\((\d+),", onclick_text) for onclick_text in onclick_labels]
-                ids = [regex_onclick.group(1) if regex_onclick else '' for regex_onclick in onclick_labels]
+                onclick_labels = ['' if label_html is None else label_html.get_attribute('onclick') or '' for label_html in labels_locator_html]
+                onclick_regex_labels = [re.search(r"PainelComponente\.show\((\d+),", onclick_text) for onclick_text in onclick_labels]
+                ids = [regex_onclick.group(1) if regex_onclick else '' for regex_onclick in onclick_regex_labels]
 
                 titles_html = [(tds.nth(1).inner_html() or '') for tds in tds_in_row]
                 titles = [strip_html_bs4(title_html).strip() for title_html in titles_html]
@@ -80,8 +80,8 @@ def extract_detail_program(page: HtmlPage) -> DetailProgram:
                 modes = [strip_html_bs4(mode_html).strip() for mode_html in modes_html]
 
                 table_courses = list(zip(codes, titles, modes, types, [level_name] * len(ids), ids))
-                table_courses = [Course(*props) for props in table_courses]
+                table_tuple_courses = [Course(*props) for props in table_courses]
 
-                courses += table_courses
+                courses += table_tuple_courses
 
     return DetailProgram(code, curriculum_title, courses)

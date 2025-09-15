@@ -55,9 +55,9 @@ def extract_cards(table: Locator) -> list[Card]:
         name = get_name(info_td)
         lines = get_other_lines(info_td)
 
-        curso_dep = next(filter(is_course_label, lines), None)
-        form_matr = next(filter(is_code_label, lines), None)
-        email_line = next(filter(is_email_label, lines), None)
+        curso_dep = next(filter(is_course_label, lines), None) or ''
+        form_matr = next(filter(is_code_label, lines), None) or ''
+        email_line = next(filter(is_email_label, lines), None) or ''
 
         cards.append(Card(img_src, name, curso_dep, form_matr, email_line))
 
