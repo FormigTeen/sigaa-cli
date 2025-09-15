@@ -5,13 +5,13 @@ from typing import Optional, cast, List
 from .browser import BrowserConfig, SigaaBrowser
 from src.sigaa_api.providers.ufba.provider import UFBAProvider
 from .models.account import Account
+from .models.section import ActiveSection
 from .parser import Parser
 from .providers.provider import Provider
 from .search.teacher import SigaaSearch
 from .accounts.ufba import SigaaAccountUFBA
 from .session import Session
 from .types import Institution, LoginStatus
-from .models.course import ActiveCourse
 from .utils.config import get_config_if_none, USER_KEY, PASSWORD_KEY, DEFAULT_PROVIDER_KEY
 
 PROVIDERS = {
@@ -33,23 +33,22 @@ class Sigaa:
         self._provider_class = PROVIDERS[final_institution]
 
         self._browser = SigaaBrowser(BrowserConfig(base_url=self._provider_class.HOST, headless=headless))
-        self._session = Session(institution=institution)
+        self._session = Session(institution=final_institution)
         self._parser = parser or Parser()
 
         # Apenas UFBA
         self._provider: Provider = self._provider_class(self._browser, self._session)
         self._account: Optional[Account] = None
-        self._active_courses: Optional[List[ActiveCourse]] = None
+        self._active_courses: Optional[List[ActiveSection]] = None
 
     def login(self, username: Optional[str] = None, password: Optional[str] = None) -> bool:
         if self._session.login_status == LoginStatus.UNAUTHENTICATED:
-            self._provider.login(get_config_if_none(USER_KEY, username), get_config_if_none(PASSWORD_KEY, password))
+            self._provider.login(get_config_if_none(USER_KEY, username) or '', get_config_if_none(PASSWORD_KEY, password) or '')
         self._session.login_status = LoginStatus.AUTHENTICATED
         return True
 
     def logoff(self) -> bool:
         if self._session.login_status == LoginStatus.AUTHENTICATED:
-            self._provider.logoff()
             self._account = None
         self._session.login_status = LoginStatus.UNAUTHENTICATED
         return True
@@ -61,17 +60,17 @@ class Sigaa:
             return self._account
         return Account(
             provider=self._provider.KEY,
-            registration=self._provider.get_registration(),
+            registration=self._provider.get_registration() or '',
             name=self._provider.get_name(),
             email=self._provider.get_email(),
-            profile_picture_url=self._provider.get_profile_picture_url(),
+            profile_picture_url=self._provider.get_profile_picture_url() or '',
             program=self._provider.get_program(),
         )
 
     def close(self) -> None:
         self._browser.close()
 
-    def get_active_courses(self) -> List[ActiveCourse]:
+    def get_active_sections(self) -> List[ActiveSection]:
         if self._session.login_status == LoginStatus.UNAUTHENTICATED:
             raise ValueError("Not authenticated")
         if self._active_courses is not None:

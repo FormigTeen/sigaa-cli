@@ -2,7 +2,6 @@ from typing import NamedTuple, List, Optional
 import re
 
 from src.sigaa_api.browser import HtmlPage, NodeAdapter
-from src.sigaa_api.providers.ufba.utils.database import get_detail_section, save_detail_section
 from src.sigaa_api.utils.list import safe_get
 from src.sigaa_api.utils.parser import strip_html_bs4
 
@@ -22,6 +21,7 @@ Section = NamedTuple('Section', [
     ('spots', list[Spot]),
     ('total', str),
     ('total_requested', str),
+    ('total_rerequested', str),
     ('total_accepted', str),
 ])
 def _normalize_text(text: str) -> str:
@@ -104,11 +104,6 @@ def go_and_extract_detail_section(row: NodeAdapter, page: HtmlPage) -> Section:
     title = _extract_course_from_header(row)
     term, mode, time_id, location = _extract_basic_from_row(row)
 
-    saved_detail = get_detail_section(ref_id)
-
-    if saved_detail:
-        # Converta para Section
-        return saved_detail
 
     # Navigate to detail page
     if ref_id:
@@ -136,9 +131,10 @@ def go_and_extract_detail_section(row: NodeAdapter, page: HtmlPage) -> Section:
 
     total = strip_html_bs4(total_html).strip()
     total_requested = strip_html_bs4(safe_get(totals, 0, ''))
+    total_rerequested = strip_html_bs4(safe_get(totals, 1, ''))
     total_accepted = strip_html_bs4(safe_get(totals, 2, ''))
 
-    print("Encontrei: ", (total, total_requested, total_accepted))
+    print("Encontrei: ", (total, total_requested, total_rerequested, total_accepted))
 
     teachers, spots = _extract_teachers_and_spots(page)
 
@@ -146,6 +142,5 @@ def go_and_extract_detail_section(row: NodeAdapter, page: HtmlPage) -> Section:
     page.go_back()
     page.wait_for_selector('#lista-turmas')
 
-    section = Section(ref_id, title, term, teachers, mode, time_id, location, spots, total, total_requested, total_accepted)
-    save_detail_section(section)
+    section = Section(ref_id, title, term, teachers, mode, time_id, location, spots, total, total_requested, total_rerequested, total_accepted)
     return section

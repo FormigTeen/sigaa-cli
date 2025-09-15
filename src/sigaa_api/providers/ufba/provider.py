@@ -1,20 +1,24 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from functools import wraps
 from typing import Final, Optional, List
 import re
 
 from src.sigaa_api.models.entities import ActiveTeacher, ActiveStudent
-from src.sigaa_api.models.program import DetailedProgram
+from src.sigaa_api.models.program import DetailedProgram, Program
+from src.sigaa_api.models.section import Section, DetailedSection, ActiveSection, Spot
 from src.sigaa_api.providers.provider import Provider
 from src.sigaa_api.providers.ufba.utils.active_courses import get_table as get_active_courses_table, \
     is_valid_active_course_line, get_active_course, to_detail_page_and_extract
 from src.sigaa_api.providers.ufba.utils.detail_program import extract_detail_program, Course, DetailProgram
-from src.sigaa_api.providers.ufba.utils.detail_section import go_and_extract_detail_section
+from src.sigaa_api.providers.ufba.utils.detail_section import go_and_extract_detail_section, Spot as UnsafeSpot
+from src.sigaa_api.providers.ufba.utils.elements import extract_times
 from src.sigaa_api.providers.ufba.utils.table_html import get_rows, Card
 from src.sigaa_api.utils.host import add_uri
 from src.sigaa_api.utils.parser import strip_html_bs4
-from src.sigaa_api.models.course import ActiveCourse, AnchoredCourse
+from src.sigaa_api.models.course import AnchoredCourse, Course as ModelCourse
+from src.sigaa_api.utils.text import strip_parentheses_terms, extract_sequence
 
 
 class UFBAProvider(Provider):
@@ -108,7 +112,7 @@ class UFBAProvider(Provider):
             term = re.sub(r"\s+", " ", term)
             return term or None
 
-    def get_active_courses(self) -> List[ActiveCourse]:
+    def get_active_courses(self) -> List[ActiveSection]:
         def parse_teacher(teacher: Card) -> ActiveTeacher:
             img_url = add_uri(self.get_host(), teacher.img_src)
             email = teacher.email.lower().replace('e-mail:', '').strip()
@@ -123,7 +127,7 @@ class UFBAProvider(Provider):
             registration = student.code.upper().replace("MATRÍCULA:", "").strip()
             return ActiveStudent(name=student.name.strip(), email=email, course_label=course_label, registration=registration, image_url=img_url)
 
-        courses: List[ActiveCourse] = []
+        courses: List[ActiveSection] = []
         with self._browser.page() as p:
             p.goto('/sigaa/portais/discente/discente.jsf')
             tbl = get_active_courses_table(p)
@@ -136,42 +140,58 @@ class UFBAProvider(Provider):
 
             for row in rows:
                 _, table_location, time_code = get_active_course(row)
-                title, count, teachers, students, *_ = to_detail_page_and_extract(p, row)
+                result = to_detail_page_and_extract(p, row)
+                title, count, teachers, students, *_ = result if result else ("", "", [], [])
                 code, name, *_ = map(str.strip, title.split('-', 1))
                 name, class_code = map(str.strip, name.split('- T', 1))
                 class_code = "T" + class_code
 
                 [number_classes, total_classes, *_] = list(map(str.strip, count.split('/')))
-                [number_classes, total_classes] = list(map(int, [number_classes, total_classes]))
-
-                time_codes = re.findall(r"\b(\d+)([MTN]+)(\d+)\b", time_code)
-                time_codes = list(map("".join, time_codes))
+                course_elment = ModelCourse(
+                    name=name,
+                    code=code,
+                )
 
                 courses.append(
-                    ActiveCourse(
-                        code=code,
-                        name=name,
-                        table_location=table_location,
-                        time_codes=time_codes,
+                    ActiveSection(
+                        course=course_elment,
+                        location_table=table_location,
+                        time_codes=extract_times(time_code),
                         term=current_term,
                         class_code=class_code,
                         teachers=list(map(parse_teacher, teachers)),
                         students=list(map(parse_student, students)),
-                        total_classes=total_classes,
-                        number_classes=number_classes,
+                        total_classes=int(total_classes),
+                        number_classes=int(number_classes),
                     )
                 )
         return courses
 
     def get_sections(self) -> None:
+        def parse_stop(value: UnsafeSpot) -> Spot:
+            [name, location, program_type, mode, time_code, *_] = list(map(str.strip, value.course.split('-')))
+            [used, total, *_] = list(map(extract_sequence, value.count.split('/')))
+            program = Program(
+                title=name,
+                location=location,
+                program_type=program_type,
+                mode=mode,
+                time_code=time_code,
+            )
+            return Spot(
+                program=program,
+                seats_count=total,
+                seats_accepted=used
+            )
+
         with self._browser.page() as page:
             page.goto('/sigaa/ensino/turma/busca_turma.jsf')
             page.wait_for_selector('#busca\\:curso')
 
             # Itera sobre os cursos, ignorando a primeira opção (placeholder)
-            course_options = page.locator('#form\\:selectCurso > option')
-            total_courses = course_options.count()
-            course_options = [course_options.nth(index) for index in range(1, total_courses)]
+            course_options_nodes = page.locator('#form\\:selectCurso > option')
+            total_courses = course_options_nodes.count()
+            course_options = [course_options_nodes.nth(index) for index in range(1, total_courses)]
             course_option_values = [option.get_attribute('value') for option in course_options]
             course_option_values = [value for value in course_option_values if value]
 
@@ -183,6 +203,7 @@ class UFBAProvider(Provider):
                 # Nome legível do curso selecionado (para logging)
                 selected_opt = page.locator('#form\\:selectCurso > option:checked')
                 course_name = strip_html_bs4(selected_opt.nth(0).inner_html() or '') if selected_opt.count() > 0 else str(course_value)
+                [course_name, *_] = list(map(str.strip, course_name.split('-', 1)))
 
                 # Garante que o checkbox de curso esteja sempre marcado
                 checkbox_selector = '#form\\:checkCurso'
@@ -205,13 +226,30 @@ class UFBAProvider(Provider):
                 rows_with_class = [(row, (row.get_attribute('class') or '').lower()) for row in rows]
                 rows_with_class = [(row, classes) for row, classes in rows_with_class if 'no-hover' not in classes]
                 rows = [row for row, classes in rows_with_class if 'linhapar' in classes or 'linhaimpar' in classes]
-                print(course_name, len(rows))
 
-                sections = []
+                sections: list[DetailedSection] = []
                 for row in rows:
-                    #print(sections)
                     try:
-                         sections.append(go_and_extract_detail_section(row, page))
+                        unsafe_section = go_and_extract_detail_section(row, page)
+                        [code, *_] = list(map(str.strip, unsafe_section.title.split('-', 1)))
+                        course = ModelCourse(code=code, name=course_name)
+                        teachers = list(map(strip_parentheses_terms, unsafe_section.teachers))
+                        section = DetailedSection(
+                            id_ref=unsafe_section.ref_id.strip(),
+                            course=course,
+                            term=unsafe_section.term.strip(),
+                            teachers=teachers,
+                            mode=unsafe_section.mode.strip(),
+                            time_codes=extract_times(unsafe_section.time_id),
+                            location_table=unsafe_section.location.strip(),
+                            seats_count=extract_sequence(unsafe_section.total),
+                            seats_accepted=extract_sequence(unsafe_section.total_accepted),
+                            seats_requested=extract_sequence(unsafe_section.total_requested),
+                            seats_rerequested=extract_sequence(unsafe_section.total_rerequested),
+                            spots_reserved=list(map(parse_stop, unsafe_section.spots)),
+                        )
+                        print(section)
+                        sections.append(section)
                     except Exception as e:
                         print(e)
                         continue
@@ -221,7 +259,7 @@ class UFBAProvider(Provider):
 
     def get_programs(self) -> list[DetailedProgram]:
         programs : List[DetailedProgram] = []
-        def parse_course(program: DetailProgram):
+        def parse_course(program: DetailProgram) -> Callable[[Course], AnchoredCourse]:
             def parse(course: Course) -> AnchoredCourse:
                 [name, *_] = course.title.split('-')
                 return AnchoredCourse(
@@ -241,9 +279,9 @@ class UFBAProvider(Provider):
             page.wait_for_selector('#busca\\:curso')
 
             # Itera sobre os cursos, ignorando a primeira opção (placeholder)
-            course_options = page.locator('#busca\\:curso > option')
-            total_courses = course_options.count()
-            course_options = [course_options.nth(index) for index in range(1, total_courses)]
+            course_options_nodes = page.locator('#busca\\:curso > option')
+            total_courses = course_options_nodes.count()
+            course_options = [course_options_nodes.nth(index) for index in range(1, total_courses)]
             course_option_values = [option.get_attribute('value') for option in course_options]
             course_option_values = [value for value in course_option_values if value]
 
@@ -252,10 +290,10 @@ class UFBAProvider(Provider):
                 page.locator('#busca\\:curso').nth(0).select_option(course_value)
                 page.wait_for_selector('#busca\\:matriz')
 
-                matriz_options = page.locator('#busca\\:matriz > option')
-                total_matrizes = matriz_options.count()
+                matriz_options_nodes = page.locator('#busca\\:matriz > option')
+                total_matrizes = matriz_options_nodes.count()
 
-                matriz_options = [matriz_options.nth(index) for index in range(1, total_matrizes)]
+                matriz_options = [matriz_options_nodes.nth(index) for index in range(1, total_matrizes)]
                 matriz_values = [option.get_attribute('value') for option in matriz_options]
 
                 for matriz_value in matriz_values:

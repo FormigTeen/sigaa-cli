@@ -5,13 +5,13 @@ from src.sigaa_api.models.course import AnchoredCourse
 
 @dataclass(frozen=True)
 class Program:
-    code: str
     title: str
-
-@dataclass(frozen=True)
-class DetailedProgram(Program):
+    time_code: str
     location: str
     program_type: str
     mode: str
-    time_code: str
+
+@dataclass(frozen=True)
+class DetailedProgram(Program):
+    code: str
     courses: list[AnchoredCourse]
