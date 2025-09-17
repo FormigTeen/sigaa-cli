@@ -15,7 +15,8 @@ dependencies = [
     "rich>=13.7",
     "rich-click>=1.8",
     "tinydb>=4.8,<5",
-    "python-dotenv"
+    "python-dotenv",
+    "pydantic"
 ]
 authors = [{ name = "Matheus Freitas", email = "msformigteen@live.com" }]
 

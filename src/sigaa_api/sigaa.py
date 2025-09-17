@@ -1,18 +1,20 @@
 from __future__ import annotations
 
+from tinydb import TinyDB, Query  # type: ignore
 from typing import Optional, cast, List
 
 from .browser import BrowserConfig, SigaaBrowser
 from src.sigaa_api.providers.ufba.provider import UFBAProvider
 from .models.account import Account
+from .models.program import DetailedProgram
 from .models.section import ActiveSection
 from .parser import Parser
 from .providers.provider import Provider
-from .search.teacher import SigaaSearch
-from .accounts.ufba import SigaaAccountUFBA
+from .providers.ufba.utils.database import dump, load
 from .session import Session
 from .types import Institution, LoginStatus
 from .utils.config import get_config_if_none, USER_KEY, PASSWORD_KEY, DEFAULT_PROVIDER_KEY
+from .utils.dicts import to_jsonable, from_record
 
 PROVIDERS = {
     UFBAProvider.KEY: UFBAProvider,
@@ -56,9 +58,7 @@ class Sigaa:
     def get_account(self) -> Account:
         if self._session.login_status == LoginStatus.UNAUTHENTICATED:
             raise ValueError("Not authenticated")
-        if self._account is not None:
-            return self._account
-        return Account(
+        account = Account(
             provider=self._provider.KEY,
             registration=self._provider.get_registration() or '',
             name=self._provider.get_name(),
@@ -66,6 +66,10 @@ class Sigaa:
             profile_picture_url=self._provider.get_profile_picture_url() or '',
             program=self._provider.get_program(),
         )
+        self._provider.get_database().table('accounts').upsert(
+            dump(account), Query().registration == account.registration
+        )
+        return account
 
     def close(self) -> None:
         self._browser.close()
@@ -79,10 +83,18 @@ class Sigaa:
         self._active_courses = courses
         return courses
 
-    def get_programs(self) -> None:
+    def get_programs(self) -> bool:
         if self._session.login_status == LoginStatus.UNAUTHENTICATED:
             raise ValueError("Not authenticated")
-        self._provider.get_programs()
+        saved_programs = self._provider.get_database().table('programs').all()
+        if saved_programs and len(saved_programs) > 0:
+            saved_programs = [load(DetailedProgram, program) for program in saved_programs]
+            print(saved_programs)
+            return True
+        programs = self._provider.get_programs()
+        for program in programs:
+            self._provider.get_database().table('programs').upsert(dump(program), Query().code == program.code)
+        return True
 
     def get_sections(self) -> None:
         if self._session.login_status == LoginStatus.UNAUTHENTICATED:

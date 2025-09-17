@@ -1,9 +1,10 @@
 from __future__ import annotations
-
+from pydantic import BaseModel
 import os
 from typing import Any, List, Optional, NamedTuple
-
 from tinydb import TinyDB, Query  # type: ignore
+
+from src.sigaa_api.browser import SigaaBrowser
 
 # Arquivo temporário para persistência dos resultados do scraper (sempre TinyDB)
 DB_PATH = os.environ.get("SECTIONS_DB_FILE", "/tmp/sections.json")
@@ -98,3 +99,19 @@ def get_detail_section(id: str) -> Any:
         except Exception:
             pass
     return _from_dict_section(found or {}) if found else None
+
+DB_FOLDER = os.path.join("/tmp", "sigaa", "data")
+_connections = dict()
+def get_database(provider: str) -> TinyDB:
+    if provider not in _connections:
+        database_path = os.path.join(DB_FOLDER, provider.lower() + ".json")
+        os.makedirs(os.path.dirname(database_path) or ".", exist_ok=True)
+        _connections[provider] = TinyDB(database_path)
+    return _connections[provider]
+
+
+def dump(model: BaseModel) -> dict:
+    return model.model_dump(mode="json")
+
+def load(cls: type[BaseModel], data: dict):
+    return cls.model_validate(data)

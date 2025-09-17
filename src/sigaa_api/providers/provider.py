@@ -2,9 +2,10 @@ from abc import ABC, abstractmethod
 from typing import ClassVar, Optional, List, Any
 from src.sigaa_api.browser import SigaaBrowser
 from src.sigaa_api.models.program import DetailedProgram
+from tinydb import TinyDB  # type: ignore
 from src.sigaa_api.models.section import ActiveSection
+from src.sigaa_api.providers.ufba.utils.database import get_database
 from src.sigaa_api.session import Session
-
 
 class Provider(ABC):
     KEY: ClassVar[str]
@@ -20,6 +21,7 @@ class Provider(ABC):
     def __init__(self, browser: SigaaBrowser, session: Session) -> None:
         self._browser = browser
         self._session = session
+        self._database = get_database(self.KEY)
 
     @abstractmethod
     def login(self, username: str, password: str) -> None:
@@ -62,3 +64,6 @@ class Provider(ABC):
 
     def get_host(self) -> str:
         return self.HOST
+
+    def get_database(self) -> TinyDB:
+        return self._database

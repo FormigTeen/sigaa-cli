@@ -284,7 +284,7 @@ class UFBAProvider(Provider):
             course_option_values = [option.get_attribute('value') for option in course_options]
             course_option_values = [value for value in course_option_values if value]
 
-            for course_value in course_option_values:
+            for course_value in course_option_values[:5]:
                 # Seleciona o curso para carregar as matrizes e coletar todos os valores
                 page.locator('#busca\\:curso').nth(0).select_option(course_value)
                 page.wait_for_selector('#busca\\:matriz')

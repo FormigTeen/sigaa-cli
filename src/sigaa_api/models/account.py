@@ -1,8 +1,8 @@
 from dataclasses import dataclass
+from pydantic import BaseModel
 from typing import NamedTuple, Optional
 
-@dataclass(frozen=True) 
-class Account:
+class Account(BaseModel):
     provider: str
     registration: str
     program: Optional[str]
