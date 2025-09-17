@@ -10,6 +10,13 @@ class DetailedCourse(Course):
     mode: str
     id_ref: str
 
+class RequestedCourse(DetailedCourse):
+    location: str
+    prerequisites: list[list[str]]
+    corequisites: list[list[str]]
+    equivalences: list[list[str]]
+
+
 class AnchoredCourse(DetailedCourse):
     program_code: str
     level: str

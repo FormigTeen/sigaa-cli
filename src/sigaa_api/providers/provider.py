@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import ClassVar, Optional, List, Any
 from src.sigaa_api.browser import SigaaBrowser
+from src.sigaa_api.models.course import RequestedCourse
 from src.sigaa_api.models.program import DetailedProgram
 from tinydb import TinyDB
 from src.sigaa_api.models.section import ActiveSection, DetailedSection
@@ -69,5 +70,5 @@ class Provider(ABC):
         return self._database
 
     @abstractmethod
-    def get_course(self, ref_id: str) -> None:
+    def get_course(self, ref_id: str) -> RequestedCourse:
         ...

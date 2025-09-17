@@ -17,7 +17,7 @@ from src.sigaa_api.providers.ufba.utils.table_html import get_rows, Card
 from src.sigaa_api.utils.compiler import fnd_array
 from src.sigaa_api.utils.host import add_uri
 from src.sigaa_api.utils.parser import strip_html_bs4
-from src.sigaa_api.models.course import AnchoredCourse, Course as ModelCourse
+from src.sigaa_api.models.course import AnchoredCourse, Course as ModelCourse, RequestedCourse
 from src.sigaa_api.utils.text import strip_parentheses_terms, extract_sequence
 
 
@@ -257,7 +257,7 @@ class UFBAProvider(Provider):
                 page.wait_for_selector('#busca\\:curso')
             return sections
 
-    def get_course(self, ref_id: str) -> dict:
+    def get_course(self, ref_id: str) -> RequestedCourse:
         with self._browser.page() as page:
             page.goto('/sigaa/graduacao/componente/view_painel.jsf?id=' + str(ref_id))
             page.wait_for_selector('body')
@@ -324,8 +324,18 @@ class UFBAProvider(Provider):
                         value = clean(tds.nth(1).inner_html())
                         data['workload_total'] = value
 
-            print(data)
-            return data
+
+            department, location, *_ = data['department'].split('-')
+            return RequestedCourse(
+                ref_id=ref_id,
+                name=data['name'],
+                department=department,
+                location=location,
+                mode=data['mode'],
+                prerequisites=data['prerequisites'],
+                corequisites=data['corequisites'],
+                equivalences=data['equivalences'],
+            )
 
     def get_programs(self) -> list[DetailedProgram]:
         programs : List[DetailedProgram] = []
@@ -355,7 +365,7 @@ class UFBAProvider(Provider):
             course_option_values = [option.get_attribute('value') for option in course_options]
             course_option_values = [value for value in course_option_values if value]
 
-            for course_value in course_option_values[:5]:
+            for course_value in course_option_values:
                 # Seleciona o curso para carregar as matrizes e coletar todos os valores
                 page.locator('#busca\\:curso').nth(0).select_option(course_value)
                 page.wait_for_selector('#busca\\:matriz')

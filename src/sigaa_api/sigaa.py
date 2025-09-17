@@ -6,6 +6,7 @@ from typing import Optional, cast, List
 from .browser import BrowserConfig, SigaaBrowser
 from src.sigaa_api.providers.ufba.provider import UFBAProvider
 from .models.account import Account
+from .models.course import RequestedCourse
 from .models.program import DetailedProgram
 from .models.section import ActiveSection
 from .parser import Parser
@@ -82,29 +83,57 @@ class Sigaa:
         self._active_courses = courses
         return courses
 
-    def get_programs(self) -> bool:
+    def get_programs(self) -> List[DetailedProgram]:
         if self._session.login_status == LoginStatus.UNAUTHENTICATED:
             raise ValueError("Not authenticated")
+        print("Verificando se há Cursos salvos...")
         raw_saved_programs = self._provider.get_database().table('programs').all()
-        if raw_saved_programs and len(raw_saved_programs) > 0:
-            return True
+        if len(raw_saved_programs) > 0:
+            return [load(DetailedProgram, program) for program in raw_saved_programs]
+        print("Buscando Cursos...")
         programs = self._provider.get_programs()
+        print("Salvando " + str(len(programs)) + " Cursos...")
         for program in programs:
             self._provider.get_database().table('programs').upsert(dump(program), Query().code == program.code)
-        return True
+        print("Cursos salvos!")
+        return programs
 
     def get_sections(self) -> bool:
         if self._session.login_status == LoginStatus.UNAUTHENTICATED:
             raise ValueError("Not authenticated")
         raw_saved_sections = self._provider.get_database().table('sections').all()
+        print("Verificando se há Turmas salvas...")
         if raw_saved_sections and len(raw_saved_sections) > 0:
             return True
+        print("Buscando Turmas...")
         sections = self._provider.get_sections()
+        print("Salvando " + str(len(sections)) + " Turmas...")
         for section in sections:
             self._provider.get_database().table('sections').upsert(dump(section), Query().id_ref == section.id_ref)
+        print("Turmas salvas!")
         return True
 
-    def get_courses(self):
+    def get_courses(self) -> list[RequestedCourse]:
         if self._session.login_status == LoginStatus.UNAUTHENTICATED:
             raise ValueError("Not authenticated")
-        self._provider.get_course("44748")
+        raw_saved_courses = self._provider.get_database().table('courses').all()
+        print("Verificando se há Disciplinas salvas...")
+        if len(raw_saved_courses) > 0:
+            return [load(RequestedCourse, course) for course in raw_saved_courses]
+
+        print("Buscando Cursos...")
+        programs = self._provider.get_programs()
+        print("Cursos capturados...")
+        if len(programs) <= 0:
+            raise ValueError("No programs")
+        simple_courses = (course for program in programs for course in program.courses)
+        ids = set(course.id_ref for course in simple_courses)
+        print("Encontrando " + str(len(ids)) + " para buscar")
+        courses = list(self._provider.get_course(id_ref) for id_ref in ids)
+        print("Salvando " + str(len(courses)) + " Cursos...")
+        for course in courses:
+            self._provider.get_database().table('courses').upsert(
+                dump(course), Query().id_ref == course.id_ref
+            )
+        print("Cursos salvos!")
+        return courses
