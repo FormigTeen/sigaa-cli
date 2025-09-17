@@ -67,3 +67,7 @@ class Provider(ABC):
 
     def get_database(self) -> TinyDB:
         return self._database
+
+    @abstractmethod
+    def get_course(self, ref_id: str) -> None:
+        ...

@@ -31,6 +31,18 @@ def programs(provider: Optional[str] = None, user: Optional[str] = None, passwor
     finally:
         sigaa.close()
 
+@cli.command("courses", help="Lista de Disciplinas (UFBA)")
+@click.option("--provider", required=False)
+@click.option("--user", required=False)
+@click.option("--password", required=False)
+def programs(provider: Optional[str] = None, user: Optional[str] = None, password: Optional[str] = None) -> None:
+    sigaa = Sigaa(institution=provider)
+    try:
+        sigaa.login(user, password)
+        sigaa.get_courses()
+    finally:
+        sigaa.close()
+
 
 @cli.command("sections", help="Lista de Cursos (UFBA)")
 @click.option("--provider", required=False)

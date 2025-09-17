@@ -103,3 +103,8 @@ class Sigaa:
         for section in sections:
             self._provider.get_database().table('sections').upsert(dump(section), Query().id_ref == section.id_ref)
         return True
+
+    def get_courses(self):
+        if self._session.login_status == LoginStatus.UNAUTHENTICATED:
+            raise ValueError("Not authenticated")
+        self._provider.get_course("44748")

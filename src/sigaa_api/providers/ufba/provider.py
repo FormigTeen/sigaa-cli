@@ -14,6 +14,7 @@ from src.sigaa_api.providers.ufba.utils.detail_program import extract_detail_pro
 from src.sigaa_api.providers.ufba.utils.detail_section import go_and_extract_detail_section, Spot as UnsafeSpot
 from src.sigaa_api.providers.ufba.utils.elements import extract_times
 from src.sigaa_api.providers.ufba.utils.table_html import get_rows, Card
+from src.sigaa_api.utils.compiler import fnd_array
 from src.sigaa_api.utils.host import add_uri
 from src.sigaa_api.utils.parser import strip_html_bs4
 from src.sigaa_api.models.course import AnchoredCourse, Course as ModelCourse
@@ -255,6 +256,76 @@ class UFBAProvider(Provider):
                 page.go_back()
                 page.wait_for_selector('#busca\\:curso')
             return sections
+
+    def get_course(self, ref_id: str) -> dict:
+        with self._browser.page() as page:
+            page.goto('/sigaa/graduacao/componente/view_painel.jsf?id=' + str(ref_id))
+            page.wait_for_selector('body')
+
+            def clean(text: Optional[str]) -> str:
+                return (strip_html_bs4(text or '') or '').replace('\n', ' ').strip()
+
+            # Data to fill
+            data: dict = {
+                'code': None,
+                'name': None,
+                'department': None,
+                'mode': None,
+                'prerequisites': [],
+                'corequisites': [],
+                'equivalences': [],
+                'workload_total': None,
+            }
+
+            # Map straightforward th -> field name
+            th_map = {
+                'Código': 'code',
+                'Nome': 'name',
+                'Unidade Responsável': 'department',
+                'Modalidade de Educação': 'mode',
+            }
+
+            rows = page.locator('tr')
+            for i in range(rows.count()):
+                row = rows.nth(i)
+                ths = row.locator('th')
+                tds = row.locator('td')
+                # Handle simple th->td pairs
+                if ths.count() > 0 and tds.count() > 0:
+                    th_text = clean(ths.nth(0).inner_html())
+                    if th_text.endswith(':'):
+                        th_text = th_text[:-1].strip()
+
+                    if th_text in th_map:
+                        value = clean(tds.nth(0).inner_html())
+                        data[th_map[th_text]] = value
+                        continue
+
+                    # Complex lists: prerequisites/corequisites/equivalences
+                    if th_text in ('Pré-Requisitos', 'Co-Requisitos', 'Equivalências'):
+                        value = clean(tds.nth(0).inner_html())
+                        value = str(value.replace('-', '').strip())
+                        result = []
+                        if len(value) > 0:
+                            result = fnd_array(value)
+
+                        key = {
+                            'Pré-Requisitos': 'prerequisites',
+                            'Co-Requisitos': 'corequisites',
+                            'Equivalências': 'equivalences',
+                        }[th_text]
+                        data[key] = result
+                        continue
+
+                # Handle workload rows (no th, left cell contains the label)
+                if tds.count() >= 2:
+                    left = clean(tds.nth(0).inner_html())
+                    if 'Total de Carga Horária do Componente' in left:
+                        value = clean(tds.nth(1).inner_html())
+                        data['workload_total'] = value
+
+            print(data)
+            return data
 
     def get_programs(self) -> list[DetailedProgram]:
         programs : List[DetailedProgram] = []
