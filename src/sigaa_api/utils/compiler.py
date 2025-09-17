@@ -35,28 +35,36 @@ def tokenize(s: str):
 
 class Parser:
     def __init__(self, text: str):
-        self.toks = list(tokenize(text)); self.i = 0
-    def peek(self): return self.toks[self.i][0]
+        self.toks = list(tokenize(text));
+        self.i = 0
+
+    def peek(self):
+        return self.toks[self.i][0]
+
     def take(self, kind=None):
         t = self.toks[self.i]
         if kind and t[0] != kind: raise SyntaxError(f"Esperado {kind}, encontrei {t}")
         self.i += 1; return t
+
     def parse(self) -> Node:
         node = self.parse_or()
         if self.peek() != "EOF": raise SyntaxError("Sobrou texto após a expressão.")
         return node
+
     def parse_or(self) -> Node:
         node = self.parse_and()
         while self.peek() == "OR":
             self.take("OR"); rhs = self.parse_and()
             node = Or(_flatten_or(node, rhs))
         return node
+
     def parse_and(self) -> Node:
         node = self.parse_factor()
         while self.peek() == "AND":
             self.take("AND"); rhs = self.parse_factor()
             node = And(_flatten_and(node, rhs))
         return node
+
     def parse_factor(self) -> Node:
         t = self.peek()
         if t == "NOT": self.take("NOT"); return Not(self.parse_factor())
