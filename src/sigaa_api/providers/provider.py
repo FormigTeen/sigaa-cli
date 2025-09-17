@@ -3,7 +3,7 @@ from typing import ClassVar, Optional, List, Any
 from src.sigaa_api.browser import SigaaBrowser
 from src.sigaa_api.models.program import DetailedProgram
 from tinydb import TinyDB
-from src.sigaa_api.models.section import ActiveSection
+from src.sigaa_api.models.section import ActiveSection, DetailedSection
 from src.sigaa_api.providers.ufba.utils.database import get_database
 from src.sigaa_api.session import Session
 
@@ -55,7 +55,7 @@ class Provider(ABC):
     def get_programs(self) -> List[DetailedProgram]:
         ...
 
-    def get_sections(self) -> None:
+    def get_sections(self) -> List[DetailedSection]:
         ...
 
     @abstractmethod

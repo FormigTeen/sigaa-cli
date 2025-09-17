@@ -166,7 +166,8 @@ class UFBAProvider(Provider):
                 )
         return courses
 
-    def get_sections(self) -> None:
+    def get_sections(self) -> List[DetailedSection]:
+        sections: list[DetailedSection] = []
         def parse_stop(value: UnsafeSpot) -> Spot:
             [name, location, program_type, mode, time_code, *_] = list(map(str.strip, value.course.split('-')))
             [used, total, *_] = list(map(extract_sequence, value.count.split('/')))
@@ -226,7 +227,6 @@ class UFBAProvider(Provider):
                 rows_with_class = [(row, classes) for row, classes in rows_with_class if 'no-hover' not in classes]
                 rows = [row for row, classes in rows_with_class if 'linhapar' in classes or 'linhaimpar' in classes]
 
-                sections: list[DetailedSection] = []
                 for row in rows:
                     try:
                         unsafe_section = go_and_extract_detail_section(row, page)
@@ -247,7 +247,6 @@ class UFBAProvider(Provider):
                             seats_rerequested=extract_sequence(unsafe_section.total_rerequested),
                             spots_reserved=list(map(parse_stop, unsafe_section.spots)),
                         )
-                        print(section)
                         sections.append(section)
                     except Exception as e:
                         print(e)
@@ -255,6 +254,7 @@ class UFBAProvider(Provider):
 
                 page.go_back()
                 page.wait_for_selector('#busca\\:curso')
+            return sections
 
     def get_programs(self) -> list[DetailedProgram]:
         programs : List[DetailedProgram] = []

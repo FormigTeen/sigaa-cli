@@ -1,28 +1,24 @@
 from dataclasses import dataclass
-
+from pydantic import BaseModel
 from src.sigaa_api.models.course import Course
 from src.sigaa_api.models.entities import ActiveTeacher, ActiveStudent
 from src.sigaa_api.models.program import Program
 
 
-@dataclass(frozen=True)
-class Spot:
+class Spot(BaseModel):
     program: Program
     seats_count: int
     seats_accepted: int
 
-@dataclass(frozen=True)
-class BaseSection:
+class BaseSection(BaseModel):
     course: Course
     term: str
     time_codes: list[str]
     location_table: str
 
-@dataclass(frozen=True)
 class Section(BaseSection):
     mode: str
 
-@dataclass(frozen=True)
 class DetailedSection(Section):
     id_ref: str
     teachers: list[str]
@@ -33,7 +29,6 @@ class DetailedSection(Section):
     spots_reserved: list[Spot]
 
 
-@dataclass(frozen=True)
 class ActiveSection(BaseSection):
     location_table: str
     term: str

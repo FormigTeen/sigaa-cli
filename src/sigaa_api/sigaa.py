@@ -87,15 +87,19 @@ class Sigaa:
             raise ValueError("Not authenticated")
         raw_saved_programs = self._provider.get_database().table('programs').all()
         if raw_saved_programs and len(raw_saved_programs) > 0:
-            saved_programs = [load(DetailedProgram, program) for program in raw_saved_programs]
-            print(saved_programs)
             return True
         programs = self._provider.get_programs()
         for program in programs:
             self._provider.get_database().table('programs').upsert(dump(program), Query().code == program.code)
         return True
 
-    def get_sections(self) -> None:
+    def get_sections(self) -> bool:
         if self._session.login_status == LoginStatus.UNAUTHENTICATED:
             raise ValueError("Not authenticated")
-        self._provider.get_sections()
+        raw_saved_sections = self._provider.get_database().table('sections').all()
+        if raw_saved_sections and len(raw_saved_sections) > 0:
+            return True
+        sections = self._provider.get_sections()
+        for section in sections:
+            self._provider.get_database().table('sections').upsert(dump(section), Query().id_ref == section.id_ref)
+        return True
