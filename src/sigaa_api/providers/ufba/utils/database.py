@@ -1,14 +1,17 @@
 from __future__ import annotations
 from pydantic import BaseModel
 import os
-from typing import Any, List, Optional, NamedTuple
-from tinydb import TinyDB, Query  # type: ignore
+from typing import Any, List, Optional, NamedTuple, TypeVar
+from tinydb import TinyDB, Query
 
 from src.sigaa_api.browser import SigaaBrowser
 
 # Arquivo temporário para persistência dos resultados do scraper (sempre TinyDB)
 DB_PATH = os.environ.get("SECTIONS_DB_FILE", "/tmp/sections.json")
 os.makedirs(os.path.dirname(DB_PATH) or ".", exist_ok=True)
+
+T = TypeVar("T")
+V = TypeVar("V")
 
 
 # Tipos locais (espelho de utils.detail_section) para reconstrução ao ler do DB
@@ -41,28 +44,6 @@ def _to_dict(obj: Any) -> Any:
         return [_to_dict(x) for x in obj]
     return obj
 
-
-def _from_dict_section(d: dict) -> Optional[Section]:
-    try:
-        spots_list = d.get("spots") or []
-        spots: List[Spot] = [Spot(course=s.get("course", ""), count=s.get("count", "")) for s in spots_list]
-        return Section(
-            ref_id=str(d.get("ref_id", "")),
-            title=str(d.get("title", "")),
-            term=str(d.get("term", "")),
-            teachers=list(d.get("teachers", []) or []),
-            mode=str(d.get("mode", "")),
-            time_id=str(d.get("time_id", "")),
-            location=str(d.get("location", "")),
-            spots=spots,
-            total=str(d.get("total", "")),
-            total_requested=str(d.get("total_requested", "")),
-            total_accepted=str(d.get("total_accepted", "")),
-        )
-    except Exception:
-        return None
-
-
 _db = TinyDB(DB_PATH)
 _table = _db.table("sections")
 
@@ -87,19 +68,6 @@ def save_detail_section(section: Any) -> None:
     except Exception:
         pass
 
-
-def get_detail_section(id: str) -> Any:
-    if not id:
-        return None
-    SectionQ = Query()
-    found = _table.get(SectionQ.ref_id == id)
-    if found:
-        try:
-            print(f"[DB] Pulando ref_id={id} (já salvo)")
-        except Exception:
-            pass
-    return _from_dict_section(found or {}) if found else None
-
 DB_FOLDER = os.path.join("/tmp", "sigaa", "data")
 _connections = dict()
 def get_database(provider: str) -> TinyDB:
@@ -110,8 +78,8 @@ def get_database(provider: str) -> TinyDB:
     return _connections[provider]
 
 
-def dump(model: BaseModel) -> dict:
+def dump(model: BaseModel) -> dict[str, V]:
     return model.model_dump(mode="json")
 
-def load(cls: type[BaseModel], data: dict):
+def load(cls: type[BaseModel], data: dict[T, V]) -> BaseModel:
     return cls.model_validate(data)

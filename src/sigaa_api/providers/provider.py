@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import ClassVar, Optional, List, Any
 from src.sigaa_api.browser import SigaaBrowser
 from src.sigaa_api.models.program import DetailedProgram
-from tinydb import TinyDB  # type: ignore
+from tinydb import TinyDB
 from src.sigaa_api.models.section import ActiveSection
 from src.sigaa_api.providers.ufba.utils.database import get_database
 from src.sigaa_api.session import Session
@@ -11,7 +11,7 @@ class Provider(ABC):
     KEY: ClassVar[str]
     HOST: ClassVar[str]
 
-    def __init_subclass__(cls, **kwargs):
+    def __init_subclass__(cls, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)
         if 'KEY' not in cls.__dict__:
             raise TypeError(f"{cls.__name__} deve definir o atributo de classe 'KEY'.")
