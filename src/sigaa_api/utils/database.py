@@ -5,6 +5,7 @@ from typing import Any, List, Optional, NamedTuple, TypeVar
 from tinydb import TinyDB, Query
 
 from src.sigaa_api.browser import SigaaBrowser
+from src.sigaa_api.utils.config import DATA_PATH, get_config
 
 # Arquivo temporário para persistência dos resultados do scraper (sempre TinyDB)
 DB_PATH = os.environ.get("SECTIONS_DB_FILE", "/tmp/sections.json")
@@ -68,14 +69,14 @@ def save_detail_section(section: Any) -> None:
     except Exception:
         pass
 
-DB_FOLDER = os.path.join("/tmp", "sigaa", "data")
-_connections = dict()
+DB_FOLDER = os.path.join(
+    str(get_config(DATA_PATH, "/tmp/sigaa")),
+    "data"
+)
 def get_database(provider: str) -> TinyDB:
-    if provider not in _connections:
-        database_path = os.path.join(DB_FOLDER, provider.lower() + ".json")
-        os.makedirs(os.path.dirname(database_path) or ".", exist_ok=True)
-        _connections[provider] = TinyDB(database_path)
-    return _connections[provider]
+    database_path = os.path.join(DB_FOLDER, provider.lower() + ".json")
+    os.makedirs(os.path.dirname(database_path) or ".", exist_ok=True)
+    return TinyDB(database_path)
 
 
 def dump(model: BaseModel) -> dict[str, V]:
