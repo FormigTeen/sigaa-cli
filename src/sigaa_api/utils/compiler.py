@@ -19,9 +19,10 @@ TOKEN_SPEC = [
     ("WS",       r"\s+"),
     ("LPAREN",   r"\("),
     ("RPAREN",   r"\)"),
-    ("OR",       r"(?i:\|\||\bor\b|ou|\+|∨)"),
-    ("AND",      r"(?i:&&|\band\b|e|\*|∧)"),
-    ("NOT",      r"(?i:!|~|¬|\bnot\b|nao|não)"),
+    # Use word boundaries for textual operators to avoid matching inside identifiers
+    ("OR",       r"(?i:\|\||\bor\b|\bou\b|\+|∨)"),
+    ("AND",      r"(?i:&&|\band\b|\be\b|\*|∧)"),
+    ("NOT",      r"(?i:!|~|¬|\bnot\b|\bnao\b|\bnão\b)"),
     ("IDENT",    r"[A-Za-zÀ-ÿ_][A-Za-zÀ-ÿ_0-9]*"),
 ]
 MASTER_RE = re.compile("|".join(f"(?P<{n}>{p})" for n, p in TOKEN_SPEC))
@@ -35,6 +36,7 @@ def tokenize(s: str):
 
 class Parser:
     def __init__(self, text: str):
+        self.text = text
         self.toks = list(tokenize(text));
         self.i = 0
 
@@ -71,7 +73,7 @@ class Parser:
         if t == "IDENT": return Var(self.take("IDENT")[1])
         if t == "LPAREN":
             self.take("LPAREN"); node = self.parse_or(); self.take("RPAREN"); return node
-        raise SyntaxError(f"Fator inesperado: {self.toks[self.i]}")
+        raise SyntaxError(f"Fator inesperado: {self.toks[self.i]} to {self.text}")
 
 def _flatten_or(a: Node, b: Node) -> List[Node]:
     xs=[]; 

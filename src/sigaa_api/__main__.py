@@ -23,11 +23,12 @@ def cli() -> None:
 @click.option("--provider", required=False)
 @click.option("--user", required=False)
 @click.option("--password", required=False)
-def programs(provider: Optional[str] = None, user: Optional[str] = None, password: Optional[str] = None) -> None:
+@click.option("--no-cache", required=False)
+def programs(provider: Optional[str] = None, user: Optional[str] = None, password: Optional[str] = None, no_cache: bool = False) -> None:
     sigaa = Sigaa(institution=provider)
     try:
         sigaa.login(user, password)
-        sigaa.get_programs()
+        sigaa.get_programs(no_cache=no_cache)
     finally:
         sigaa.close()
 
@@ -35,11 +36,12 @@ def programs(provider: Optional[str] = None, user: Optional[str] = None, passwor
 @click.option("--provider", required=False)
 @click.option("--user", required=False)
 @click.option("--password", required=False)
-def programs(provider: Optional[str] = None, user: Optional[str] = None, password: Optional[str] = None) -> None:
+@click.option("--no-cache", required=False)
+def programs(provider: Optional[str] = None, user: Optional[str] = None, password: Optional[str] = None, no_cache: bool = False) -> None:
     sigaa = Sigaa(institution=provider)
     try:
         sigaa.login(user, password)
-        sigaa.get_courses()
+        sigaa.get_courses(no_cache=no_cache)
     finally:
         sigaa.close()
 

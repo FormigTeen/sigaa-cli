@@ -326,12 +326,15 @@ class UFBAProvider(Provider):
 
 
             department, location, *_ = data['department'].split('-')
+            department, *_ = department.rsplit("/", 1)
+            print("Carregando a Disciplina: " + str(data['code']))
             return RequestedCourse(
-                ref_id=ref_id,
-                name=data['name'],
-                department=department,
-                location=location,
-                mode=data['mode'],
+                id_ref=ref_id,
+                name=data['name'].strip(),
+                code=data['code'].strip(),
+                department=department.strip(),
+                location=location.strip(),
+                mode=data['mode'].strip(),
                 prerequisites=data['prerequisites'],
                 corequisites=data['corequisites'],
                 equivalences=data['equivalences'],
@@ -421,6 +424,7 @@ class UFBAProvider(Provider):
                     detailed_program = DetailedProgram(title=title, location=location, program_type=program_type, mode=mode,
                                                        time_code=time_code, code=detail_program.code.strip(),
                                                        courses=list(map(parse_course(detail_program), detail_program.courses)))
+                    print("Encontrei o Curso: " + detailed_program.title)
                     programs.append(detailed_program)
 
                     page.go_back()

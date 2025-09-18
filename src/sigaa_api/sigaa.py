@@ -83,13 +83,14 @@ class Sigaa:
         self._active_courses = courses
         return courses
 
-    def get_programs(self) -> List[DetailedProgram]:
+    def get_programs(self, no_cache: bool = False) -> List[DetailedProgram]:
         if self._session.login_status == LoginStatus.UNAUTHENTICATED:
             raise ValueError("Not authenticated")
-        print("Verificando se há Cursos salvos...")
-        raw_saved_programs = self._provider.get_database().table('programs').all()
-        if len(raw_saved_programs) > 0:
-            return [load(DetailedProgram, program) for program in raw_saved_programs]
+        if not no_cache:
+            print("Verificando se há Cursos salvos...")
+            raw_saved_programs = self._provider.get_database().table('programs').all()
+            if len(raw_saved_programs) > 0:
+                return [load(DetailedProgram, program) for program in raw_saved_programs]
         print("Buscando Cursos...")
         programs = self._provider.get_programs()
         print("Salvando " + str(len(programs)) + " Cursos...")
@@ -113,16 +114,16 @@ class Sigaa:
         print("Turmas salvas!")
         return True
 
-    def get_courses(self) -> list[RequestedCourse]:
+    def get_courses(self, no_cache: bool = False) -> list[RequestedCourse]:
         if self._session.login_status == LoginStatus.UNAUTHENTICATED:
             raise ValueError("Not authenticated")
-        raw_saved_courses = self._provider.get_database().table('courses').all()
-        print("Verificando se há Disciplinas salvas...")
-        if len(raw_saved_courses) > 0:
-            return [load(RequestedCourse, course) for course in raw_saved_courses]
-
+        if not no_cache:
+            raw_saved_courses = self._provider.get_database().table('courses').all()
+            print("Verificando se há Disciplinas salvas...")
+            if len(raw_saved_courses) > 0:
+                return [load(RequestedCourse, course) for course in raw_saved_courses]
         print("Buscando Cursos...")
-        programs = self._provider.get_programs()
+        programs = self.get_programs()
         print("Cursos capturados...")
         if len(programs) <= 0:
             raise ValueError("No programs")

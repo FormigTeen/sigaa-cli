@@ -12,6 +12,7 @@ class DetailedCourse(Course):
 
 class RequestedCourse(DetailedCourse):
     location: str
+    department: str
     prerequisites: list[list[str]]
     corequisites: list[list[str]]
     equivalences: list[list[str]]
