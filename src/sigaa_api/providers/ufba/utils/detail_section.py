@@ -133,8 +133,6 @@ def go_and_extract_detail_section(row: NodeAdapter, page: HtmlPage) -> Section:
     total_rerequested = strip_html_bs4(safe_get(totals, 1, ) or '')
     total_accepted = strip_html_bs4(safe_get(totals, 2, '') or '')
 
-    print("Encontrei: ", (total, total_requested, total_rerequested, total_accepted))
-
     teachers, spots = _extract_teachers_and_spots(page)
 
     # Go back to the list page to continue scraping
