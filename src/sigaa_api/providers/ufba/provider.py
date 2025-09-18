@@ -228,6 +228,8 @@ class UFBAProvider(Provider):
                 rows_with_class = [(row, classes) for row, classes in rows_with_class if 'no-hover' not in classes]
                 rows = [row for row, classes in rows_with_class if 'linhapar' in classes or 'linhaimpar' in classes]
 
+                print("Buscando no Curso " + str(course_name) + " as turmas: " + str(len(rows)))
+
                 for row in rows:
                     try:
                         unsafe_section = go_and_extract_detail_section(row, page)
@@ -253,6 +255,7 @@ class UFBAProvider(Provider):
                         print(e)
                         continue
 
+                print("Bsuca das turmas de " + str(course_name) + " finalizado!")
                 page.go_back()
                 page.wait_for_selector('#busca\\:curso')
             return sections
