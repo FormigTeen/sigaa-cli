@@ -1,16 +1,11 @@
 from pathlib import Path
 from typing import Optional
-
 import rich_click as click
 from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
 from rich import box
-
 from .sigaa import Sigaa
-from .types import  Institution
-from .accounts.ufba import SigaaAccountUFBA
-from .resources.file import SigaaFile
 
 
 @click.group()
@@ -23,7 +18,7 @@ def cli() -> None:
 @click.option("--provider", required=False)
 @click.option("--user", required=False)
 @click.option("--password", required=False)
-@click.option("--no-cache", required=False)
+@click.option("--no-cache", is_flag=True)
 def programs(provider: Optional[str] = None, user: Optional[str] = None, password: Optional[str] = None, no_cache: bool = False) -> None:
     sigaa = Sigaa(institution=provider)
     try:
@@ -36,7 +31,7 @@ def programs(provider: Optional[str] = None, user: Optional[str] = None, passwor
 @click.option("--provider", required=False)
 @click.option("--user", required=False)
 @click.option("--password", required=False)
-@click.option("--no-cache", required=False)
+@click.option("--no-cache", is_flag=True)
 def programs(provider: Optional[str] = None, user: Optional[str] = None, password: Optional[str] = None, no_cache: bool = False) -> None:
     sigaa = Sigaa(institution=provider)
     try:

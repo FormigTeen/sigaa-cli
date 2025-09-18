@@ -1,8 +1,7 @@
 from __future__ import annotations
-
+import re
 from collections.abc import Callable
 from typing import Final, Optional, List
-import re
 
 from src.sigaa_api.models.entities import ActiveTeacher, ActiveStudent
 from src.sigaa_api.models.program import DetailedProgram, Program
@@ -330,7 +329,7 @@ class UFBAProvider(Provider):
 
             department, location, *_ = data['department'].split('-')
             department, *_ = department.rsplit("/", 1)
-            print("Carregando a Disciplina: " + str(data['code']))
+            print("Carregando a Disciplina: " + str(data['code']) + " - " + data['name'])
             return RequestedCourse(
                 id_ref=ref_id,
                 name=data['name'].strip(),
@@ -418,16 +417,22 @@ class UFBAProvider(Provider):
                         page.wait_for_selector('#busca\\:curso')
                         continue
 
-                    detalhar.nth(0).click()
+                    first_detail = detalhar.nth(0)
+                    onclick_attr = first_detail.get_attribute('onclick') or ''
+                    match = re.search(r"'id'\s*:\s*'([^']+)'", onclick_attr)
+                    id_ref = match.group(1) if match else ''
+
+                    first_detail.click()
 
                     page.wait_for_selector('#formulario > table')
 
                     detail_program = extract_detail_program(page)
                     [title, location, program_type, mode, time_code, *_] = list(map(str.strip, detail_program.curriculum_title.split('-')))
-                    detailed_program = DetailedProgram(title=title, location=location, program_type=program_type, mode=mode,
-                                                       time_code=time_code, code=detail_program.code.strip(),
+                    code = detail_program.code.strip()
+                    detailed_program = DetailedProgram(title=title, location=location, program_type=program_type, mode=mode, time_code=time_code,
+                                                       code=code.strip(), id_ref=id_ref.strip(),
                                                        courses=list(map(parse_course(detail_program), detail_program.courses)))
-                    print("Encontrei o Curso: " + detailed_program.title)
+                    print(f"Encontrei o Curso ({id_ref}):" + detailed_program.title)
                     programs.append(detailed_program)
 
                     page.go_back()

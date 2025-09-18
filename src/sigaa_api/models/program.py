@@ -5,11 +5,12 @@ from src.sigaa_api.models.course import AnchoredCourse
 
 class Program(BaseModel):
     title: str
-    time_code: str
     location: str
     program_type: str
     mode: str
+    time_code: str
 
 class DetailedProgram(Program):
+    id_ref: str
     code: str
     courses: list[AnchoredCourse]

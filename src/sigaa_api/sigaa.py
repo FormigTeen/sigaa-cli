@@ -1,8 +1,6 @@
 from __future__ import annotations
-
 from tinydb import TinyDB, Query
-from typing import Optional, cast, List
-
+from typing import Optional, List
 from .browser import BrowserConfig, SigaaBrowser
 from src.sigaa_api.providers.ufba.provider import UFBAProvider
 from .models.account import Account
@@ -11,9 +9,9 @@ from .models.program import DetailedProgram
 from .models.section import ActiveSection
 from .parser import Parser
 from .providers.provider import Provider
-from .providers.ufba.utils.database import dump, load
+from src.sigaa_api.utils.database import dump, load, get_database
 from .session import Session
-from .types import Institution, LoginStatus
+from .types import LoginStatus
 from .utils.config import get_config_if_none, USER_KEY, PASSWORD_KEY, DEFAULT_PROVIDER_KEY
 
 PROVIDERS = {
@@ -49,6 +47,9 @@ class Sigaa:
         self._session.login_status = LoginStatus.AUTHENTICATED
         return True
 
+    def get_database(self) -> TinyDB:
+        return get_database(self._provider.KEY)
+
     def logoff(self) -> bool:
         if self._session.login_status == LoginStatus.AUTHENTICATED:
             self._account = None
@@ -56,20 +57,21 @@ class Sigaa:
         return True
 
     def get_account(self) -> Account:
-        if self._session.login_status == LoginStatus.UNAUTHENTICATED:
-            raise ValueError("Not authenticated")
-        account = Account(
-            provider=self._provider.KEY,
-            registration=self._provider.get_registration() or '',
-            name=self._provider.get_name(),
-            email=self._provider.get_email(),
-            profile_picture_url=self._provider.get_profile_picture_url() or '',
-            program=self._provider.get_program(),
-        )
-        self._provider.get_database().table('accounts').upsert(
-            dump(account), Query().registration == account.registration
-        )
-        return account
+        with self.get_database() as db:
+            if self._session.login_status == LoginStatus.UNAUTHENTICATED:
+                raise ValueError("Not authenticated")
+            account = Account(
+                provider=self._provider.KEY,
+                registration=self._provider.get_registration() or '',
+                name=self._provider.get_name(),
+                email=self._provider.get_email(),
+                profile_picture_url=self._provider.get_profile_picture_url() or '',
+                program=self._provider.get_program(),
+            )
+            db.table('accounts').upsert(
+                dump(account), Query().registration == account.registration
+            )
+            return account
 
     def close(self) -> None:
         self._browser.close()
@@ -84,57 +86,60 @@ class Sigaa:
         return courses
 
     def get_programs(self, no_cache: bool = False) -> List[DetailedProgram]:
-        if self._session.login_status == LoginStatus.UNAUTHENTICATED:
-            raise ValueError("Not authenticated")
-        if not no_cache:
-            print("Verificando se há Cursos salvos...")
-            raw_saved_programs = self._provider.get_database().table('programs').all()
-            if len(raw_saved_programs) > 0:
-                return [load(DetailedProgram, program) for program in raw_saved_programs]
-        print("Buscando Cursos...")
-        programs = self._provider.get_programs()
-        print("Salvando " + str(len(programs)) + " Cursos...")
-        for program in programs:
-            self._provider.get_database().table('programs').upsert(dump(program), Query().code == program.code)
-        print("Cursos salvos!")
-        return programs
+        with self.get_database() as db:
+            if self._session.login_status == LoginStatus.UNAUTHENTICATED:
+                raise ValueError("Not authenticated")
+            if not no_cache:
+                print("Verificando se há Cursos salvos...")
+                raw_saved_programs = db.table('programs').all()
+                if len(raw_saved_programs) > 0:
+                    return [load(DetailedProgram, program) for program in raw_saved_programs]
+            print("Buscando Cursos...")
+            programs = self._provider.get_programs()
+            print("Salvando " + str(len(programs)) + " Cursos...")
+            for program in programs:
+                db.table('programs').upsert(dump(program), Query().id_ref == program.id_ref)
+            print("Cursos salvos!")
+            return programs
 
     def get_sections(self) -> bool:
-        if self._session.login_status == LoginStatus.UNAUTHENTICATED:
-            raise ValueError("Not authenticated")
-        raw_saved_sections = self._provider.get_database().table('sections').all()
-        print("Verificando se há Turmas salvas...")
-        if raw_saved_sections and len(raw_saved_sections) > 0:
+        with self.get_database() as db:
+            if self._session.login_status == LoginStatus.UNAUTHENTICATED:
+                raise ValueError("Not authenticated")
+            raw_saved_sections = db.table('sections').all()
+            print("Verificando se há Turmas salvas...")
+            if raw_saved_sections and len(raw_saved_sections) > 0:
+                return True
+            print("Buscando Turmas...")
+            sections = self._provider.get_sections()
+            print("Salvando " + str(len(sections)) + " Turmas...")
+            for section in sections:
+                db.table('sections').upsert(dump(section), Query().id_ref == section.id_ref)
+            print("Turmas salvas!")
             return True
-        print("Buscando Turmas...")
-        sections = self._provider.get_sections()
-        print("Salvando " + str(len(sections)) + " Turmas...")
-        for section in sections:
-            self._provider.get_database().table('sections').upsert(dump(section), Query().id_ref == section.id_ref)
-        print("Turmas salvas!")
-        return True
 
     def get_courses(self, no_cache: bool = False) -> list[RequestedCourse]:
-        if self._session.login_status == LoginStatus.UNAUTHENTICATED:
-            raise ValueError("Not authenticated")
-        if not no_cache:
-            raw_saved_courses = self._provider.get_database().table('courses').all()
-            print("Verificando se há Disciplinas salvas...")
-            if len(raw_saved_courses) > 0:
-                return [load(RequestedCourse, course) for course in raw_saved_courses]
-        print("Buscando Cursos...")
-        programs = self.get_programs()
-        print("Cursos capturados...")
-        if len(programs) <= 0:
-            raise ValueError("No programs")
-        simple_courses = (course for program in programs for course in program.courses)
-        ids = set(course.id_ref for course in simple_courses)
-        print("Encontrando " + str(len(ids)) + " para buscar")
-        courses = list(self._provider.get_course(id_ref) for id_ref in ids)
-        print("Salvando " + str(len(courses)) + " Cursos...")
-        for course in courses:
-            self._provider.get_database().table('courses').upsert(
-                dump(course), Query().id_ref == course.id_ref
-            )
-        print("Cursos salvos!")
-        return courses
+        with self.get_database() as db:
+            if self._session.login_status == LoginStatus.UNAUTHENTICATED:
+                raise ValueError("Not authenticated")
+            if not no_cache:
+                raw_saved_courses = db.table('courses').all()
+                print("Verificando se há Disciplinas salvas...")
+                if len(raw_saved_courses) > 0:
+                    return [load(RequestedCourse, course) for course in raw_saved_courses]
+            print("Buscando Cursos...")
+            programs = self.get_programs()
+            print("Cursos capturados...")
+            if len(programs) <= 0:
+                raise ValueError("No programs")
+            simple_courses = (course for program in programs for course in program.courses)
+            ids = set(course.id_ref for course in simple_courses)
+            print("Encontrando " + str(len(ids)) + " para buscar")
+            courses = list(self._provider.get_course(id_ref) for id_ref in ids)
+            print("Salvando " + str(len(courses)) + " Cursos...")
+            for course in courses:
+                db.table('courses').upsert(
+                    dump(course), Query().id_ref == course.id_ref
+                )
+            print("Cursos salvos!")
+            return courses
