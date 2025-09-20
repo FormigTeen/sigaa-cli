@@ -153,8 +153,15 @@ class Sigaa:
                 raise ValueError("Not authenticated")
             raw_saved_courses = db.table('courses').all()
             saved_courses = [load(RequestedCourse, course) for course in raw_saved_courses]
-            saved_ccode_courses = set(course.code for course in saved_courses)
-            candidate_code_courses = set(chain(course.corequisites, course.prerequisites, course.prerequisites) for course in saved_courses)
-            orphan_courses = set(code for code in candidate_code_courses if code not in saved_ccode_courses)
-            print("Status: " + str(len(orphan_courses)) + " cursos não encontradas...")
+
+            saved_ccode_courses = set((course.code for course in saved_courses))
+            candidate_code_courses = (chain(course.corequisites, course.prerequisites, course.equivalences) for course in saved_courses)
+            candidate_code_courses = (chain(*items) for items in candidate_code_courses)
+
+            candidate_code_courses = list(chain(*candidate_code_courses))
+            candidate_code_courses = set(candidate_code_courses)
+
+            orphan_code_courses = list(candidate_code_courses - saved_ccode_courses)
+            print("Encontrando " + str(len(orphan_code_courses)) + " Cursos...")
+            print("Exemplo: " + str(orphan_code_courses[:10]))
         return True
