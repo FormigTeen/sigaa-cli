@@ -1,4 +1,7 @@
 from __future__ import annotations
+
+from itertools import chain
+
 from tinydb import TinyDB, Query
 from typing import Optional, List
 from .browser import BrowserConfig, SigaaBrowser
@@ -143,3 +146,15 @@ class Sigaa:
                 )
             print("Cursos salvos!")
             return courses
+
+    def get_orphan_courses(self) -> bool:
+        with self.get_database() as db:
+            if self._session.login_status == LoginStatus.UNAUTHENTICATED:
+                raise ValueError("Not authenticated")
+            raw_saved_courses = db.table('courses').all()
+            saved_courses = [load(RequestedCourse, course) for course in raw_saved_courses]
+            saved_ccode_courses = set(course.code for course in saved_courses)
+            candidate_code_courses = set(chain(course.corequisites, course.prerequisites, course.prerequisites) for course in saved_courses)
+            orphan_courses = set(code for code in candidate_code_courses if code not in saved_ccode_courses)
+            print("Status: " + str(len(orphan_courses)) + " cursos não encontradas...")
+        return True
