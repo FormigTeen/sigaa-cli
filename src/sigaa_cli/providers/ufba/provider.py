@@ -3,21 +3,21 @@ import re
 from collections.abc import Callable
 from typing import Final, Optional, List
 
-from src.sigaa_api.models.entities import ActiveTeacher, ActiveStudent
-from src.sigaa_api.models.program import DetailedProgram, Program
-from src.sigaa_api.models.section import Section, DetailedSection, ActiveSection, Spot
-from src.sigaa_api.providers.provider import Provider
-from src.sigaa_api.providers.ufba.utils.active_courses import get_table as get_active_courses_table, \
+from src.sigaa_cli.models.entities import ActiveTeacher, ActiveStudent
+from src.sigaa_cli.models.program import DetailedProgram, Program
+from src.sigaa_cli.models.section import Section, DetailedSection, ActiveSection, Spot
+from src.sigaa_cli.providers.provider import Provider
+from src.sigaa_cli.providers.ufba.utils.active_courses import get_table as get_active_courses_table, \
     is_valid_active_course_line, get_active_course, to_detail_page_and_extract
-from src.sigaa_api.providers.ufba.utils.detail_program import extract_detail_program, Course, DetailProgram
-from src.sigaa_api.providers.ufba.utils.detail_section import go_and_extract_detail_section, Spot as UnsafeSpot
-from src.sigaa_api.providers.ufba.utils.elements import extract_times
-from src.sigaa_api.providers.ufba.utils.table_html import get_rows, Card
-from src.sigaa_api.utils.compiler import fnd_array
-from src.sigaa_api.utils.host import add_uri
-from src.sigaa_api.utils.parser import strip_html_bs4
-from src.sigaa_api.models.course import AnchoredCourse, Course as ModelCourse, RequestedCourse
-from src.sigaa_api.utils.text import strip_parentheses_terms, extract_sequence
+from src.sigaa_cli.providers.ufba.utils.detail_program import extract_detail_program, Course, DetailProgram
+from src.sigaa_cli.providers.ufba.utils.detail_section import go_and_extract_detail_section, Spot as UnsafeSpot
+from src.sigaa_cli.providers.ufba.utils.elements import extract_times
+from src.sigaa_cli.providers.ufba.utils.table_html import get_rows, Card
+from src.sigaa_cli.utils.compiler import fnd_array
+from src.sigaa_cli.utils.host import add_uri
+from src.sigaa_cli.utils.parser import strip_html_bs4
+from src.sigaa_cli.models.course import AnchoredCourse, Course as ModelCourse, RequestedCourse
+from src.sigaa_cli.utils.text import strip_parentheses_terms, extract_sequence
 
 
 class UFBAProvider(Provider):

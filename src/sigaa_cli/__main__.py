@@ -120,7 +120,7 @@ def active_courses(provider: Optional[str] = None, user: Optional[str] = None, p
         sigaa.close()
 
 def main() -> None:
-    cli(prog_name="sigaa-api")
+    cli(prog_name="sigaa-cli")
 
 
 if __name__ == "__main__":

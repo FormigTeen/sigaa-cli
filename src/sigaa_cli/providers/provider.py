@@ -1,13 +1,13 @@
 from abc import ABC, abstractmethod
 from shelve import Shelf
 from typing import ClassVar, Optional, List, Any
-from src.sigaa_api.browser import SigaaBrowser
-from src.sigaa_api.models.course import RequestedCourse
-from src.sigaa_api.models.program import DetailedProgram
+from src.sigaa_cli.browser import SigaaBrowser
+from src.sigaa_cli.models.course import RequestedCourse
+from src.sigaa_cli.models.program import DetailedProgram
 from tinydb import TinyDB
-from src.sigaa_api.models.section import ActiveSection, DetailedSection
-from src.sigaa_api.session import Session
-from src.sigaa_api.utils.cache import get_cache
+from src.sigaa_cli.models.section import ActiveSection, DetailedSection
+from src.sigaa_cli.session import Session
+from src.sigaa_cli.utils.cache import get_cache
 
 
 class Provider(ABC):

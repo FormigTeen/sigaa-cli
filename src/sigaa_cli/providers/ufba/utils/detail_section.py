@@ -1,8 +1,8 @@
 from typing import NamedTuple, List
 import re
-from src.sigaa_api.browser import HtmlPage, NodeAdapter
-from src.sigaa_api.utils.list import safe_get
-from src.sigaa_api.utils.parser import strip_html_bs4
+from src.sigaa_cli.browser import HtmlPage, NodeAdapter
+from src.sigaa_cli.utils.list import safe_get
+from src.sigaa_cli.utils.parser import strip_html_bs4
 
 Spot = NamedTuple('Spot', [
     ('course', str),

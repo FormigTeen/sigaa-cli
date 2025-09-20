@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 from pydantic import BaseModel
-from src.sigaa_api.models.course import Course
-from src.sigaa_api.models.entities import ActiveTeacher, ActiveStudent
-from src.sigaa_api.models.program import Program
+from src.sigaa_cli.models.course import Course
+from src.sigaa_cli.models.entities import ActiveTeacher, ActiveStudent
+from src.sigaa_cli.models.program import Program
 
 
 class Spot(BaseModel):

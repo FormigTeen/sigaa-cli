@@ -4,10 +4,10 @@ from dotenv import load_dotenv, find_dotenv
 
 load_dotenv(find_dotenv(), override=False)
 
-USER_KEY = "SIGAA_API_USER"
-PASSWORD_KEY = "SIGAA_API_PASSWORD"
-DEFAULT_PROVIDER_KEY = "SIGAA_API_DEFAULT_PROVIDER"
-DATA_PATH = "SIGAA_API_DATA_PATH"
+USER_KEY = "SIGAA_CLI_USER"
+PASSWORD_KEY = "SIGAA_CLI_PASSWORD"
+DEFAULT_PROVIDER_KEY = "SIGAA_CLI_DEFAULT_PROVIDER"
+DATA_PATH = "SIGAA_CLI_DATA_PATH"
 
 def get_config_if_none(key: str, value: Optional[str] = None, default_value: Optional[str] = None) -> Optional[str]:
     return value if value is not None else os.getenv(key) or default_value

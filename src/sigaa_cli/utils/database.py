@@ -3,7 +3,7 @@ from pydantic import BaseModel
 import os
 from typing import Any, List, Optional, NamedTuple, TypeVar
 from tinydb import TinyDB, Query
-from src.sigaa_api.utils.config import DATA_PATH, get_config
+from src.sigaa_cli.utils.config import DATA_PATH, get_config
 
 # Arquivo temporário para persistência dos resultados do scraper (sempre TinyDB)
 DB_PATH = os.environ.get("SECTIONS_DB_FILE", "/tmp/sections.json")

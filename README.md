@@ -1,55 +1,12 @@
-# SIGAA API (Python)
+# SIGAA CLI
 
-Port em Python do projeto sigaa-api com foco inicial em UFBA, agora usando Playwright para navegação/crawling e Mypy para tipagem.
+Ferramenta de linha de comando para interagir com o SIGAA (foco inicial: UFBA), construída sobre Playwright. Oferece comandos para autenticação, consulta de conta, listagem de cursos/disciplinas ativas e mais.
 
 - Python: >= 3.9
 - Navegação: Playwright (Chromium headless)
-- Tipagem: Mypy (opcional, modo estrito configurado)
+- Tipagem: Mypy (opcional; modo estrito configurado)
 
-## Funcionalidades
-
-- Login (UFBA) com validação de credenciais.
-- Conta (UFBA):
-  - Listar vínculos ativos/inativos e trocar vínculo por matrícula.
-  - Obter nome e e-mails do usuário.
-  - Obter matrícula (Registration) ativa do discente.
-  - Obter URL e baixar foto de perfil.
-  - Listar cursos/turmas do discente.
-  - Listar atividades do portal do discente.
-- Cursos:
-  - Abrir turma por título, listar e baixar arquivos anexos (heurística).
-- Busca pública:
-  - Buscar docentes, listar resultados (nome, departamento, URL da página e foto), extrair e-mail e baixar foto do docente.
-
-Observação: Suporte atual: UFBA.
-
-### Status de Funcionalidades (Testes & Desenvolvimento)
-
-| Funcionalidade                             | Status | Exemplo de comando                                                                                                    |
-|--------------------------------------------| --- |-----------------------------------------------------------------------------------------------------------------------|
-| Login (implícito nos comandos)             | ✅ | `sigaa-api account-name --provider UFBA --user USUARIO --password SENHA`                                              |
-| Get Account                                | ✅ | `sigaa-api account --provider UFBA --user USUARIO --password SENHA`                                               |
-| Listar vínculos (ativos/inativos)          | ⏳ |                                                                                                                       |
-| Listar e-mails do usuário                  | ⏳ |                                                                                                                       |
-| Trocar vínculo por matrícula               | ⏳ |                                                                                                                       |
-| Listar cursos/turmas do discente           | ⏳ |                                                                                                                       |
-| Listar atividades do portal do discente    | ⏳ |                                                                                                                       |
-| Download de arquivo por URL (autenticado)  | ⏳ |                                                                                                                       |
-| Busca de docentes (pública)                | ⏳ |                                                                                                                       |
-| Abrir turma por título                     | ⏳ |                                                                                                                       |
-| Listar/baixar arquivos da turma            | ⏳ |                                                                                                                       |
-| Ver faltas e notas das turmas              | ⏳ |                                                                                                                       |
-| Ver notícias publicadas nas turmas         | ⏳ |                                                                                                                       |
-| Ver membros da turma (alunos/professores)  | ⏳ |                                                                                                                       |
-| Ver foto de colegas e professores          | ⏳ |                                                                                                                       |
-| Buscar docentes por campus                 | ⏳ |                                                                                                                       |
-| Planos de ensino, atendimento, referências | ⏳ |                                                                                                                       |
-| Alterar senha da conta                     | ⏳ |                                                                                                                       |
-| Download de arquivos de todas as turmas    | ⏳ |                                                                                                                       |
-
-Notas:
-- As quatro primeiras entradas foram testadas manualmente (Login, Get Name, Get Matricula, Get Profile Image). As demais estão implementadas ou planejadas, mas ainda não validadas end‑to‑end nesta branch.
-- “Abrir turma por título” e “Listar/baixar arquivos da turma” estão presentes na API programática e na documentação, mas os comandos de CLI específicos ainda não foram adicionados nesta branch.
+Observação: O pacote Python interno foi renomeado para `sigaa_cli`.
 
 ## Instalação
 
@@ -57,191 +14,131 @@ Notas:
 
 ```bash
 python -m venv .venv
-source .venv/bin/activate  # Linux/macOS
-# .venv\Scripts\activate  # Windows
+source .venv/bin/activate   # Linux/macOS
+# .venv\Scripts\activate    # Windows (PowerShell)
 ```
 
-2) Instale o pacote (modo desenvolvimento) e dependências de dev (opcional):
+2) Instale em modo desenvolvimento (opcionalmente com extras):
 
 ```bash
 pip install -e .[dev]
 ```
 
-3) (Opcional) Checar tipagem com Mypy:
+3) Instale o navegador do Playwright (uma vez por ambiente):
 
 ```bash
-mypy src/sigaa_api
+python -m playwright install chromium
 ```
 
-## Uso via CLI
+Após instalado, o comando de entrada é `sigaa-cli` (ou `sigaa_cli`).
 
-Após instalado, o comando de entrada é `sigaa-api` (ou `python -m sigaa_api`). Todos os comandos aceitam `--url` (URL base do SIGAA, ex.: `https://sigaa.ufba.br`), `--user` e `--password` quando exigem autenticação.
+## Configuração
 
-### Busca de docentes (pública)
+Você pode passar `--provider`, `--user` e `--password` por linha de comando ou definir via variáveis de ambiente/`.env`.
+
+- `SIGAA_CLI_DEFAULT_PROVIDER`: Provedor padrão (ex.: `UFBA`).
+- `SIGAA_CLI_USER`: Usuário para login.
+- `SIGAA_CLI_PASSWORD`: Senha para login.
+- `SIGAA_CLI_DATA_PATH`: Pasta base para dados/cache (padrão: `/tmp/sigaa`).
+
+Arquivo `.env` é carregado automaticamente (se presente) via `python-dotenv`.
+
+## Comandos
+
+Todos os comandos suportam as opções comuns quando aplicável:
+
+- `--provider`: Provedor/instituição (ex.: `UFBA`).
+- `--user`: Usuário para autenticação.
+- `--password`: Senha para autenticação.
+
+Comandos disponíveis:
+
+- `programs`: Lista cursos/graduações (UFBA)
+  - Ex.: `sigaa-cli programs --provider UFBA --user ... --password ...`
+- `courses`: Lista disciplinas (UFBA)
+  - Ex.: `sigaa-cli courses --provider UFBA --user ... --password ...`
+- `sections`: Lista turmas/seções (UFBA)
+  - Ex.: `sigaa-cli sections --provider UFBA --user ... --password ...`
+- `account`: Mostra informações da conta do usuário autenticado
+  - Ex.: `sigaa-cli account --provider UFBA --user ... --password ...`
+- `active-courses`: Lista as disciplinas ativas do discente
+  - Ex.: `sigaa-cli active-courses --provider UFBA --user ... --password ...`
+
+Alguns comandos aceitam `--no-cache` para ignorar cache local.
+
+## Exemplos rápidos
+
+Listar disciplinas ativas:
 
 ```bash
-sigaa-api search-teacher --url https://sigaa.ufba.br \
-  --user SEU_USUARIO --password SUA_SENHA \
-  --name "Nome do Docente" \
-  --download-photo-dir ./fotos  # opcional
+sigaa-cli active-courses --provider UFBA --user USUARIO --password SENHA
 ```
 
-Saída: lista com nome, departamento e URL. Se `--download-photo-dir` for informado e houver foto, baixa a imagem.
-
-### Conta (UFBA)
-
-- Vínculos:
+Exibir dados da conta:
 
 ```bash
-sigaa-api account-bonds --url https://sigaa.ufba.br \
-  --user SEU_USUARIO --password SUA_SENHA
+sigaa-cli account --provider UFBA --user USUARIO --password SENHA
 ```
 
-- Trocar vínculo por matrícula:
+Listar cursos/graduações (programs):
 
 ```bash
-sigaa-api account-switch-bond --url https://sigaa.ufba.br \
-  --user SEU_USUARIO --password SUA_SENHA \
-  --registration 2023XXXXX
+sigaa-cli programs --provider UFBA --user USUARIO --password SENHA --no-cache
 ```
 
-- Nome e e-mails:
+## Uso Programático (opcional)
 
-```bash
-sigaa-api account-name   --url https://sigaa.ufba.br --user ... --password ...
-sigaa-api account-emails --url https://sigaa.ufba.br --user ... --password ...
-```
-
-- Foto de perfil (exibir URL e opcionalmente baixar):
-
-```bash
-sigaa-api account-profile-picture --url https://sigaa.ufba.br \
-  --user ... --password ... \
-  --download-dir ./fotos  # opcional
-```
-
-### Cursos do discente (UFBA)
-
-- Listar cursos/turmas:
-
-```bash
-sigaa-api student-courses --url https://sigaa.ufba.br \
-  --user ... --password ...
-```
-
-- Listar atividades do portal:
-
-```bash
-sigaa-api student-activities --url https://sigaa.ufba.br \
-  --user ... --password ...
-```
-
-- Listar e baixar arquivos de uma turma (por título):
-
-```bash
-sigaa-api course-list-files --url https://sigaa.ufba.br \
-  --user ... --password ... \
-  --course-title "Algoritmos I"
-
-sigaa-api course-download-files --url https://sigaa.ufba.br \
-  --user ... --password ... \
-  --course-title "Algoritmos I" --dest ./downloads
-```
-
-### Download direto por URL
-
-Baixa um arquivo acessível com a sessão autenticada.
-
-```bash
-sigaa-api download-file --url https://sigaa.ufba.br \
-  --user ... --password ... \
-  --file-url https://sigaa.ufba.br/sigaa/.../arquivo.pdf \
-  --dest ./downloads
-```
-
-## Uso Programático (Python)
-
-### Uso rápido (alto nível `Sigaa`)
-
-Os métodos abaixo seguem o mesmo padrão de cache usados em `get_name` e `get_email`, e agora incluem matrícula (Registration) e URL da foto de perfil.
+O pacote interno para uso como biblioteca é `sigaa_cli`. Exemplos:
 
 ```python
-from sigaa_api import Sigaa, Institution
+from sigaa_cli import Sigaa, Institution
 
 sigaa = Sigaa(institution=Institution.UFBA, url="https://sigaa.ufba.br")
 try:
     sigaa.login("USUARIO", "SENHA")
-
-    # Perfil do usuário (alto nível)
-    print(sigaa.get_name())                 # Nome
-    print(sigaa.get_email())                # Email
-    print(sigaa.get_registration())         # Registration (Matrícula ativa)
-    print(sigaa.get_profile_picture_url())  # URL da foto de perfil
+    print(sigaa.get_name())
 finally:
     sigaa.close()
 ```
 
-```python
-from pathlib import Path
-from sigaa_api import Sigaa, Institution
+## Como Contribuir
 
-sigaa = Sigaa(institution=Institution.UFBA, url="https://sigaa.ufba.br")
-try:
-    account = sigaa.login("USUARIO", "SENHA")
+- Abra issues descrevendo bugs ou novas funcionalidades.
+- Faça um fork e crie branches temáticas.
+- Mantenha mudanças focadas e com descrição clara no PR.
+- Siga o padrão dos módulos existentes e mantenha tipagem quando possível.
 
-    # Vínculos (API de conta UFBA)
-    active = account.get_active_bonds()
-    inactive = account.get_inactive_bonds()
-    account.switch_bond_by_registration("2023XXXXX")
+Checklist local:
 
-    # Cursos e atividades
-    courses = account.get_courses()
-    activities = account.get_activities()
-
-    # Arquivos de uma turma por título
-    cs = account.open_course_by_title("Algoritmos I")
-    files = cs.list_files()
-    saved = cs.download_files(Path("./downloads"))
-finally:
-    sigaa.close()
+```bash
+pip install -e .[dev]
+python -m playwright install chromium
+mypy src/sigaa_cli
 ```
-
-## Limitações e Notas
-
-- Instituições suportadas nos recursos de conta: UFBA. Outras instituições podem apresentar variações de layout/fluxo, e serão adicionadas conforme demanda.
-- A listagem de arquivos usa heurística sobre a página da turma; se sua instância SIGAA possuir seções específicas (ex.: "Materiais", "Conteúdo"), podemos refinar os seletores.
-- Requer Playwright instalado (e os binários do navegador). Após instalar as dependências, execute `playwright install chromium` no ambiente para baixar o Chromium.
 
 ## Desenvolvimento
 
-- Formatação e tipagem:
+- Tipagem (mypy, modo estrito):
 
 ```bash
-mypy src/sigaa_api
+mypy src/sigaa_cli
 ```
 
-- Usando Poe the Poet (tarefas):
+- Tarefas via Poe the Poet:
 
 ```bash
-# já incluso em extras de desenvolvimento
-pip install -e .[dev]
-
-# checagem de tipos
-poe typecheck
-# ou alias
-poe mypy
+poe typecheck  # alias: poe mypy
 ```
 
-- Estrutura principal do código:
-  - `sigaa_api/sigaa.py`: Classe de alto nível `Sigaa` (browser + sessão + parser + login).
-  - `sigaa_api/login.py`: Login UFBA.
-  - `sigaa_api/accounts/ufba.py`: Conta UFBA (vínculos, cursos, atividades, perfil).
-  - `sigaa_api/courses/*`: Modelos e navegação de turma.
-  - `sigaa_api/resources/file.py`: Download via `context.request` do Playwright.
-  - `sigaa_api/search/teacher.py`: Busca pública de docentes (JSF) via Playwright.
+Estrutura principal do código:
 
-## Roadmap
+- `sigaa_cli/sigaa.py`: Classe de alto nível `Sigaa` (browser + sessão + parser + login).
+- `sigaa_cli/accounts/ufba.py`: Conta UFBA (vínculos, cursos, atividades, perfil).
+- `sigaa_cli/courses/*`: Modelos e navegação de turma.
+- `sigaa_cli/resources/file.py`: Download via Playwright.
+- `sigaa_cli/search/teacher.py`: Busca pública de docentes.
 
-- Adicionar suporte a outras instituições (quando necessário).
-- Parser específico por tipo de recurso (materiais, notícias, fóruns etc.).
-- Melhorar detecção de links de arquivos e navegação dentro da turma (JSF form actions).
+## Notas e Limitações
+
+- Suporte atual focado em UFBA; outras instituições podem variar o fluxo e layout.
+- Requer instalação do Chromium via Playwright para execução dos comandos que navegam no SIGAA.

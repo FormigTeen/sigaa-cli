@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from pydantic import BaseModel
-from src.sigaa_api.models.course import AnchoredCourse
+from src.sigaa_cli.models.course import AnchoredCourse
 
 
 class Program(BaseModel):

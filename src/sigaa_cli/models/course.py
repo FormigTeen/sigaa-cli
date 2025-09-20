@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from pydantic import BaseModel
-from src.sigaa_api.models.entities import ActiveTeacher, ActiveStudent
+from src.sigaa_cli.models.entities import ActiveTeacher, ActiveStudent
 
 class Course(BaseModel):
     code: str

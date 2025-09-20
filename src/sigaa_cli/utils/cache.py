@@ -3,7 +3,7 @@ import os
 import shelve
 from typing import Any, Optional, TypeVar
 
-from src.sigaa_api.utils.config import DATA_PATH, get_config
+from src.sigaa_cli.utils.config import DATA_PATH, get_config
 
 T = TypeVar("T")
 

@@ -1,9 +1,9 @@
 from collections import namedtuple
 from typing import List, Optional, NamedTuple
 
-from src.sigaa_api.browser import HtmlPage, Locator, NodeAdapter
-from src.sigaa_api.providers.ufba.utils.table_html import extract_cards, Card
-from src.sigaa_api.utils.parser import strip_html_bs4
+from src.sigaa_cli.browser import HtmlPage, Locator, NodeAdapter
+from src.sigaa_cli.providers.ufba.utils.table_html import extract_cards, Card
+from src.sigaa_cli.utils.parser import strip_html_bs4
 
 
 def get_table(page: HtmlPage) -> Locator:

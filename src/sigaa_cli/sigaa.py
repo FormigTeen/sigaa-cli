@@ -2,14 +2,14 @@ from __future__ import annotations
 from tinydb import TinyDB, Query
 from typing import Optional, List
 from .browser import BrowserConfig, SigaaBrowser
-from src.sigaa_api.providers.ufba.provider import UFBAProvider
+from src.sigaa_cli.providers.ufba.provider import UFBAProvider
 from .models.account import Account
 from .models.course import RequestedCourse
 from .models.program import DetailedProgram
 from .models.section import ActiveSection
 from .parser import Parser
 from .providers.provider import Provider
-from src.sigaa_api.utils.database import dump, load, get_database
+from src.sigaa_cli.utils.database import dump, load, get_database
 from .session import Session
 from .types import LoginStatus
 from .utils.config import get_config_if_none, USER_KEY, PASSWORD_KEY, DEFAULT_PROVIDER_KEY

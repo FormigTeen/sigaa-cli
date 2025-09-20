@@ -3,9 +3,9 @@ requires = ["setuptools>=69", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "sigaa-api"
+name = "sigaa-cli"
 version = "0.1.0"
-description = "SIGAA API"
+description = "SIGAA CLI"
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
@@ -21,10 +21,11 @@ dependencies = [
 authors = [{ name = "Matheus Freitas", email = "msformigteen@live.com" }]
 
 [project.scripts]
-sigaa-api = "sigaa_api.__main__:main"
+sigaa-cli = "sigaa_cli.__main__:main"
+sigaa_cli = "sigaa_cli.__main__:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/sigaa_api"]
+packages = ["src/sigaa_cli"]
 
 [project.optional-dependencies]
 dev = [
@@ -53,6 +54,6 @@ ignore_missing_imports = true
 
 [tool.poe.tasks]
 # Type checking with mypy
-typecheck = "mypy src/sigaa_api"
+typecheck = "mypy src/sigaa_cli"
 # Alias
 mypy = "poe typecheck"

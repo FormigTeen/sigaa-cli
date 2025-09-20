@@ -1,8 +1,8 @@
 from typing import NamedTuple, List
 import re
 
-from src.sigaa_api.browser import HtmlPage
-from src.sigaa_api.utils.parser import strip_html_bs4
+from src.sigaa_cli.browser import HtmlPage
+from src.sigaa_cli.utils.parser import strip_html_bs4
 
 # Course entry as shown in the curriculum tables
 Course = NamedTuple('Course', [

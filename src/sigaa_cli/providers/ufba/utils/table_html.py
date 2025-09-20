@@ -1,7 +1,7 @@
 from typing import Any, List, NamedTuple
 
-from src.sigaa_api.browser import HtmlPage, Locator, NodeAdapter
-from src.sigaa_api.utils.list import chunk_after
+from src.sigaa_cli.browser import HtmlPage, Locator, NodeAdapter
+from src.sigaa_cli.utils.list import chunk_after
 
 
 def get_rows(table: Locator) -> List[NodeAdapter]:
