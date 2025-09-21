@@ -73,3 +73,7 @@ class Provider(ABC):
     @abstractmethod
     def get_course(self, ref_id: str) -> RequestedCourse:
         ...
+
+    @abstractmethod
+    def get_course_by_code(self, code: str) -> List[RequestedCourse]:
+        ...

@@ -259,6 +259,45 @@ class UFBAProvider(Provider):
                 page.wait_for_selector('#busca\\:curso')
             return sections
 
+    def get_course_by_code(self, code: str) -> List[RequestedCourse]:
+        with self._browser.page() as page:
+            page.goto('/sigaa/geral/componente_curricular/busca_geral.jsf')
+            page.wait_for_selector('#formBusca')
+            checkbox_selector = '#formBusca\\:checkCodigo'
+            checked_selector = '#formBusca\\:checkCodigo:checked'
+            checkbox = page.locator(checkbox_selector)
+            if checkbox.count() > 0:
+                is_checked = page.locator(checked_selector).count() > 0
+                if not is_checked:
+                    checkbox.nth(0).click()
+                    page.wait_for_selector(checked_selector)
+
+            input_selector = 'tr:has(#formBusca\\:checkCodigo) input[type=text]'
+            input_loc = page.locator(input_selector)
+            if input_loc.count() > 0:
+                input_loc.nth(0).fill(code)
+
+            # Clica no botão Buscar
+            search_button = page.locator('#formBusca\\:btnBuscar')
+            if search_button.count() > 0:
+                search_button.nth(0).click()
+
+            page.wait_for_selector('#conteudo > table')
+
+            anchors = page.locator('#conteudo > table > tbody tr td:nth-child(6) > a')
+
+            ref_ids: List[str] = []
+            total = anchors.count()
+            for i in range(total):
+                a = anchors.nth(i)
+                onclick_attr = a.get_attribute('onclick') or ''
+                match = re.search(r"'id'\s*:\s*'([^']+)'", onclick_attr)
+                if match:
+                    ref_ids.append(match.group(1))
+
+            print("Resultado: ", code, ref_ids)
+        return [self.get_course(id) for id in ref_ids]
+
     def get_course(self, ref_id: str) -> RequestedCourse:
         with self._browser.page() as page:
             page.goto('/sigaa/graduacao/componente/view_painel.jsf?id=' + str(ref_id))

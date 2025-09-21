@@ -163,5 +163,11 @@ class Sigaa:
 
             orphan_code_courses = list(candidate_code_courses - saved_ccode_courses)
             print("Encontrando " + str(len(orphan_code_courses)) + " Cursos...")
-            print("Exemplo: " + str(orphan_code_courses[:10]))
+            courses = []
+            for orphan_course in orphan_code_courses:
+                courses += self._provider.get_course_by_code(orphan_course)
+            for course in courses:
+                db.table('courses').upsert(
+                    dump(course), Query().id_ref == course.id_ref
+                )
         return True

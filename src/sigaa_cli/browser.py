@@ -83,6 +83,12 @@ class NodeAdapter:
         except PWTimeoutError:
             return None
 
+    def fill(self, value: str) -> None:
+        try:
+            self._loc.fill(value)
+        except PWTimeoutError:
+            return None
+
     def inner_html(self) -> str:
         try:
             return self._loc.inner_html() or ""
