@@ -265,7 +265,7 @@ class UFBAProvider(Provider):
             cached_value = get_value(cache, ":".join(["course", "code", code]))
             if cached_value and "courses" in cached_value:
                 result = [
-                    RequestedCourse(value) for value in cached_value["courses"]
+                    RequestedCourse.model_validate(value) for value in cached_value["courses"]
                 ]
                 print("Resultado em Cache: ", code, [result.code for result in result])
                 return result
