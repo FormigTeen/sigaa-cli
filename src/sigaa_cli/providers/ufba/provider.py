@@ -13,6 +13,7 @@ from src.sigaa_cli.providers.ufba.utils.detail_program import extract_detail_pro
 from src.sigaa_cli.providers.ufba.utils.detail_section import go_and_extract_detail_section, Spot as UnsafeSpot
 from src.sigaa_cli.providers.ufba.utils.elements import extract_times
 from src.sigaa_cli.providers.ufba.utils.table_html import get_rows, Card
+from src.sigaa_cli.utils.cache import get_value, save_value
 from src.sigaa_cli.utils.compiler import fnd_array
 from src.sigaa_cli.utils.host import add_uri
 from src.sigaa_cli.utils.parser import strip_html_bs4
@@ -260,7 +261,14 @@ class UFBAProvider(Provider):
             return sections
 
     def get_course_by_code(self, code: str) -> List[RequestedCourse]:
-        with self._browser.page() as page:
+        with self.get_cache() as cache, self._browser.page() as page:
+            cached_value = get_value(cache, ":".join(["course", "code", code]))
+            if cached_value and "courses" in cached_value:
+                result = [
+                    RequestedCourse(value) for value in cached_value["courses"]
+                ]
+                print("Resultado em Cache: ", code, [result.code for result in result])
+                return result
             page.goto('/sigaa/geral/componente_curricular/busca_geral.jsf')
             page.wait_for_selector('#formBusca')
             checkbox_selector = '#formBusca\\:checkCodigo'
@@ -296,7 +304,11 @@ class UFBAProvider(Provider):
                     ref_ids.append(match.group(1))
 
             print("Resultado: ", code, ref_ids)
-        return [self.get_course(id) for id in ref_ids]
+            result = [self.get_course(id) for id in ref_ids]
+            save_value(cache, ":".join(["course", "code", code]), {
+                "courses": result,
+            }, 60 * 60 * 24 * 365)
+            return result
 
     def get_course(self, ref_id: str) -> RequestedCourse:
         with self._browser.page() as page:

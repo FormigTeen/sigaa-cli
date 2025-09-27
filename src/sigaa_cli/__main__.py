@@ -1,4 +1,3 @@
-from pathlib import Path
 from typing import Optional
 import rich_click as click
 from rich.console import Console
@@ -32,7 +31,7 @@ def programs(provider: Optional[str] = None, user: Optional[str] = None, passwor
 @click.option("--user", required=False)
 @click.option("--password", required=False)
 @click.option("--no-cache", is_flag=True)
-def programs(provider: Optional[str] = None, user: Optional[str] = None, password: Optional[str] = None, no_cache: bool = False) -> None:
+def courses(provider: Optional[str] = None, user: Optional[str] = None, password: Optional[str] = None, no_cache: bool = False) -> None:
     sigaa = Sigaa(institution=provider)
     try:
         sigaa.login(user, password)
@@ -90,7 +89,7 @@ def get_account(provider: Optional[str] = None, user: Optional[str] = None, pass
 @click.option("--provider", required=False)
 @click.option("--user", required=False)
 @click.option("--password", required=False)
-def programs(provider: Optional[str] = None, user: Optional[str] = None, password: Optional[str] = None) -> None:
+def orphan_courses(provider: Optional[str] = None, user: Optional[str] = None, password: Optional[str] = None) -> None:
     sigaa = Sigaa(institution=provider)
     try:
         sigaa.login(user, password)

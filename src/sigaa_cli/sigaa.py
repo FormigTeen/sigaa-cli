@@ -3,7 +3,7 @@ from __future__ import annotations
 from itertools import chain
 
 from tinydb import TinyDB, Query
-from typing import Optional, List
+from typing import Optional, List, cast
 from .browser import BrowserConfig, SigaaBrowser
 from src.sigaa_cli.providers.ufba.provider import UFBAProvider
 from .models.account import Account
@@ -96,7 +96,7 @@ class Sigaa:
                 print("Verificando se há Cursos salvos...")
                 raw_saved_programs = db.table('programs').all()
                 if len(raw_saved_programs) > 0:
-                    return [load(DetailedProgram, program) for program in raw_saved_programs]
+                    return [cast(DetailedProgram, load(DetailedProgram, program)) for program in raw_saved_programs]
             print("Buscando Cursos...")
             programs = self._provider.get_programs()
             print("Salvando " + str(len(programs)) + " Cursos...")
@@ -129,7 +129,7 @@ class Sigaa:
                 raw_saved_courses = db.table('courses').all()
                 print("Verificando se há Disciplinas salvas...")
                 if len(raw_saved_courses) > 0:
-                    return [load(RequestedCourse, course) for course in raw_saved_courses]
+                    return [cast(RequestedCourse, load(RequestedCourse, course)) for course in raw_saved_courses]
             print("Buscando Cursos...")
             programs = self.get_programs()
             print("Cursos capturados...")
@@ -152,20 +152,22 @@ class Sigaa:
             if self._session.login_status == LoginStatus.UNAUTHENTICATED:
                 raise ValueError("Not authenticated")
             raw_saved_courses = db.table('courses').all()
-            saved_courses = [load(RequestedCourse, course) for course in raw_saved_courses]
+            saved_courses: list[RequestedCourse] = [cast(RequestedCourse, load(RequestedCourse, course)) for course in raw_saved_courses]
 
             saved_ccode_courses = set((course.code for course in saved_courses))
+
             candidate_code_courses = (chain(course.corequisites, course.prerequisites, course.equivalences) for course in saved_courses)
-            candidate_code_courses = (chain(*items) for items in candidate_code_courses)
+            chain_candidate_code_courses = (chain(*items) for items in candidate_code_courses)
 
-            candidate_code_courses = list(chain(*candidate_code_courses))
-            candidate_code_courses = set(candidate_code_courses)
+            list_candidate_code_courses: list[str] = list(chain(*chain_candidate_code_courses))
+            set_candidate_code_courses: set[str] = set(list_candidate_code_courses)
 
-            orphan_code_courses = list(candidate_code_courses - saved_ccode_courses)
+            orphan_code_courses: list[str] = list(set_candidate_code_courses - saved_ccode_courses)
             print("Encontrando " + str(len(orphan_code_courses)) + " Cursos...")
             courses = []
-            for orphan_course in orphan_code_courses:
+            for orphan_course in sorted(orphan_code_courses):
                 courses += self._provider.get_course_by_code(orphan_course)
+
             for course in courses:
                 db.table('courses').upsert(
                     dump(course), Query().id_ref == course.id_ref
